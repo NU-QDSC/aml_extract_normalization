@@ -1,0 +1,538 @@
+Abnormality,MorphName,Morph,TopoName,Topo,CaseCount,Type
++1,"Acute myeloid leukemia, NOS",1101,,,181,Trisomy
++1,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,37,Trisomy
++1,Acute myelomonocytic leukemia (FAB type M4),1107,,,32,Trisomy
++1,Acute erythroleukemia (FAB type M6),1112,,,37,Trisomy
+-1,"Acute myeloid leukemia, NOS",1101,,,52,Monosomy
++2,"Acute myeloid leukemia, NOS",1101,,,83,Trisomy
++2,Acute megakaryoblastic leukemia (FAB type M7),1113,,,32,Trisomy
+-2,"Acute myeloid leukemia, NOS",1101,,,92,Monosomy
++3,"Acute myeloid leukemia, NOS",1101,,,57,Trisomy
+-3,"Acute myeloid leukemia, NOS",1101,,,276,Monosomy
+-3,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,24,Monosomy
+-3,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,60,Monosomy
+-3,Acute erythroleukemia (FAB type M6),1112,,,44,Monosomy
+-3,Acute megakaryoblastic leukemia (FAB type M7),1113,,,30,Monosomy
++4,"Acute myeloid leukemia, NOS",1101,,,169,Trisomy
++4,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,27,Trisomy
++4,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,40,Trisomy
++4,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,93,Trisomy
++4,Acute myelomonocytic leukemia (FAB type M4),1107,,,53,Trisomy
+-4,"Acute myeloid leukemia, NOS",1101,,,182,Monosomy
+-4,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,26,Monosomy
+-4,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,38,Monosomy
+-4,Acute erythroleukemia (FAB type M6),1112,,,41,Monosomy
+-4,Acute megakaryoblastic leukemia (FAB type M7),1113,,,26,Monosomy
++5,"Acute myeloid leukemia, NOS",1101,,,66,Trisomy
+-5,"Acute myeloid leukemia, NOS",1101,,,513,Monosomy
+-5,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,32,Monosomy
+-5,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,53,Monosomy
+-5,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,138,Monosomy
+-5,Acute myelomonocytic leukemia (FAB type M4),1107,,,58,Monosomy
+-5,Acute erythroleukemia (FAB type M6),1112,,,126,Monosomy
+-5,Acute megakaryoblastic leukemia (FAB type M7),1113,,,49,Monosomy
++6,"Acute myeloid leukemia, NOS",1101,,,178,Trisomy
++6,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,37,Trisomy
++6,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,47,Trisomy
++6,Acute myelomonocytic leukemia (FAB type M4),1107,,,54,Trisomy
++6,Acute monoblastic leukemia (FAB type M5),1108,,,36,Trisomy
++6,Acute erythroleukemia (FAB type M6),1112,,,50,Trisomy
++6,Acute megakaryoblastic leukemia (FAB type M7),1113,,,78,Trisomy
+-6,"Acute myeloid leukemia, NOS",1101,,,139,Monosomy
+-6,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,32,Monosomy
+-6,Acute erythroleukemia (FAB type M6),1112,,,24,Monosomy
++7,"Acute myeloid leukemia, NOS",1101,,,36,Trisomy
+-7,"Acute myeloid leukemia, NOS",1101,,,1403,Monosomy
+-7,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,88,Monosomy
+-7,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,212,Monosomy
+-7,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,303,Monosomy
+-7,Acute myelomonocytic leukemia (FAB type M4),1107,,,233,Monosomy
+-7,Acute monoblastic leukemia (FAB type M5),1108,,,68,Monosomy
+-7,Acute erythroleukemia (FAB type M6),1112,,,194,Monosomy
+-7,Acute megakaryoblastic leukemia (FAB type M7),1113,,,98,Monosomy
++8,"Acute myeloid leukemia, NOS",1101,,,1497,Trisomy
++8,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,75,Trisomy
++8,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,215,Trisomy
++8,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,388,Trisomy
++8,Acute promyelocytic leukemia (FAB type M3),1106,,,237,Trisomy
++8,Acute myelomonocytic leukemia (FAB type M4),1107,,,357,Trisomy
++8,Acute monoblastic leukemia (FAB type M5),1108,,,264,Trisomy
++8,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,113,Trisomy
++8,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,56,Trisomy
++8,Acute erythroleukemia (FAB type M6),1112,,,144,Trisomy
++8,Acute megakaryoblastic leukemia (FAB type M7),1113,,,153,Trisomy
+-8,"Acute myeloid leukemia, NOS",1101,,,110,Monosomy
+-8,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,48,Monosomy
+-8,Acute myelomonocytic leukemia (FAB type M4),1107,,,24,Monosomy
++9,"Acute myeloid leukemia, NOS",1101,,,183,Trisomy
++9,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,46,Trisomy
++9,Acute myelomonocytic leukemia (FAB type M4),1107,,,42,Trisomy
+-9,"Acute myeloid leukemia, NOS",1101,,,167,Monosomy
+-9,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,49,Monosomy
+-9,Acute myelomonocytic leukemia (FAB type M4),1107,,,29,Monosomy
+-9,Acute erythroleukemia (FAB type M6),1112,,,50,Monosomy
+-9,Acute megakaryoblastic leukemia (FAB type M7),1113,,,41,Monosomy
++10,"Acute myeloid leukemia, NOS",1101,,,144,Trisomy
++10,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,34,Trisomy
++10,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,57,Trisomy
++10,Acute myelomonocytic leukemia (FAB type M4),1107,,,29,Trisomy
++10,Acute megakaryoblastic leukemia (FAB type M7),1113,,,39,Trisomy
+-10,"Acute myeloid leukemia, NOS",1101,,,113,Monosomy
+-10,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,30,Monosomy
+-10,Acute erythroleukemia (FAB type M6),1112,,,33,Monosomy
++11,"Acute myeloid leukemia, NOS",1101,,,312,Trisomy
++11,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,90,Trisomy
++11,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,129,Trisomy
++11,Acute myelomonocytic leukemia (FAB type M4),1107,,,57,Trisomy
++11,Acute monoblastic leukemia (FAB type M5),1108,,,29,Trisomy
++11,Acute megakaryoblastic leukemia (FAB type M7),1113,,,26,Trisomy
+-11,"Acute myeloid leukemia, NOS",1101,,,168,Monosomy
+-11,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,54,Monosomy
+-11,Acute erythroleukemia (FAB type M6),1112,,,31,Monosomy
+-11,Acute megakaryoblastic leukemia (FAB type M7),1113,,,34,Monosomy
++12,"Acute myeloid leukemia, NOS",1101,,,64,Trisomy
+-12,"Acute myeloid leukemia, NOS",1101,,,286,Monosomy
+-12,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,29,Monosomy
+-12,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,60,Monosomy
+-12,Acute myelomonocytic leukemia (FAB type M4),1107,,,34,Monosomy
+-12,Acute erythroleukemia (FAB type M6),1112,,,49,Monosomy
+-12,Acute megakaryoblastic leukemia (FAB type M7),1113,,,29,Monosomy
++13,"Acute myeloid leukemia, NOS",1101,,,361,Trisomy
++13,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,87,Trisomy
++13,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,78,Trisomy
++13,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,81,Trisomy
++13,Acute myelomonocytic leukemia (FAB type M4),1107,,,59,Trisomy
++13,Acute monoblastic leukemia (FAB type M5),1108,,,37,Trisomy
+-13,"Acute myeloid leukemia, NOS",1101,,,262,Monosomy
+-13,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,43,Monosomy
+-13,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,74,Monosomy
+-13,Acute myelomonocytic leukemia (FAB type M4),1107,,,42,Monosomy
+-13,Acute erythroleukemia (FAB type M6),1112,,,64,Monosomy
+-13,Acute megakaryoblastic leukemia (FAB type M7),1113,,,39,Monosomy
++14,"Acute myeloid leukemia, NOS",1101,,,168,Trisomy
++14,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,37,Trisomy
++14,Acute megakaryoblastic leukemia (FAB type M7),1113,,,29,Trisomy
+-14,"Acute myeloid leukemia, NOS",1101,,,144,Monosomy
+-14,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,42,Monosomy
+-14,Acute erythroleukemia (FAB type M6),1112,,,38,Monosomy
+-14,Acute megakaryoblastic leukemia (FAB type M7),1113,,,26,Monosomy
++15,"Acute myeloid leukemia, NOS",1101,,,110,Trisomy
++15,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,43,Trisomy
++15,Acute myelomonocytic leukemia (FAB type M4),1107,,,24,Trisomy
+-15,"Acute myeloid leukemia, NOS",1101,,,223,Monosomy
+-15,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,24,Monosomy
+-15,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,57,Monosomy
+-15,Acute myelomonocytic leukemia (FAB type M4),1107,,,35,Monosomy
+-15,Acute erythroleukemia (FAB type M6),1112,,,56,Monosomy
+-15,Acute megakaryoblastic leukemia (FAB type M7),1113,,,29,Monosomy
++16,"Acute myeloid leukemia, NOS",1101,,,50,Trisomy
+-16,"Acute myeloid leukemia, NOS",1101,,,355,Monosomy
+-16,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,45,Monosomy
+-16,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,82,Monosomy
+-16,Acute myelomonocytic leukemia (FAB type M4),1107,,,51,Monosomy
+-16,Acute erythroleukemia (FAB type M6),1112,,,72,Monosomy
+-16,Acute megakaryoblastic leukemia (FAB type M7),1113,,,36,Monosomy
+-17,"Acute myeloid leukemia, NOS",1101,,,646,Monosomy
+-17,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,43,Monosomy
+-17,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,99,Monosomy
+-17,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,166,Monosomy
+-17,Acute myelomonocytic leukemia (FAB type M4),1107,,,79,Monosomy
+-17,Acute monoblastic leukemia (FAB type M5),1108,,,36,Monosomy
+-17,Acute erythroleukemia (FAB type M6),1112,,,123,Monosomy
+-17,Acute megakaryoblastic leukemia (FAB type M7),1113,,,37,Monosomy
++18,"Acute myeloid leukemia, NOS",1101,,,93,Trisomy
++18,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,27,Trisomy
+-18,"Acute myeloid leukemia, NOS",1101,,,480,Monosomy
+-18,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,53,Monosomy
+-18,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,121,Monosomy
+-18,Acute myelomonocytic leukemia (FAB type M4),1107,,,64,Monosomy
+-18,Acute erythroleukemia (FAB type M6),1112,,,97,Monosomy
+-18,Acute megakaryoblastic leukemia (FAB type M7),1113,,,37,Monosomy
++19,"Acute myeloid leukemia, NOS",1101,,,264,Trisomy
++19,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,40,Trisomy
++19,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,53,Trisomy
++19,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,51,Trisomy
++19,Acute myelomonocytic leukemia (FAB type M4),1107,,,49,Trisomy
++19,Acute monoblastic leukemia (FAB type M5),1108,,,51,Trisomy
++19,Acute erythroleukemia (FAB type M6),1112,,,36,Trisomy
++19,Acute megakaryoblastic leukemia (FAB type M7),1113,,,106,Trisomy
+-19,"Acute myeloid leukemia, NOS",1101,,,147,Monosomy
+-19,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,24,Monosomy
+-19,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,40,Monosomy
+-19,Acute erythroleukemia (FAB type M6),1112,,,58,Monosomy
++20,"Acute myeloid leukemia, NOS",1101,,,126,Trisomy
++20,Acute myelomonocytic leukemia (FAB type M4),1107,,,32,Trisomy
++20,Acute megakaryoblastic leukemia (FAB type M7),1113,,,30,Trisomy
+-20,"Acute myeloid leukemia, NOS",1101,,,245,Monosomy
+-20,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,30,Monosomy
+-20,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,73,Monosomy
+-20,Acute myelomonocytic leukemia (FAB type M4),1107,,,37,Monosomy
+-20,Acute erythroleukemia (FAB type M6),1112,,,69,Monosomy
++21,"Acute myeloid leukemia, NOS",1101,,,532,Trisomy
++21,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,33,Trisomy
++21,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,106,Trisomy
++21,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,135,Trisomy
++21,Acute promyelocytic leukemia (FAB type M3),1106,,,30,Trisomy
++21,Acute myelomonocytic leukemia (FAB type M4),1107,,,121,Trisomy
++21,Acute monoblastic leukemia (FAB type M5),1108,,,68,Trisomy
++21,Acute erythroleukemia (FAB type M6),1112,,,75,Trisomy
++21,Acute megakaryoblastic leukemia (FAB type M7),1113,,,188,Trisomy
+-21,"Acute myeloid leukemia, NOS",1101,,,276,Monosomy
+-21,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,35,Monosomy
+-21,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,102,Monosomy
+-21,Acute myelomonocytic leukemia (FAB type M4),1107,,,56,Monosomy
+-21,Acute erythroleukemia (FAB type M6),1112,,,62,Monosomy
+-21,Acute megakaryoblastic leukemia (FAB type M7),1113,,,35,Monosomy
++22,"Acute myeloid leukemia, NOS",1101,,,319,Trisomy
++22,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,43,Trisomy
++22,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,84,Trisomy
++22,Acute myelomonocytic leukemia (FAB type M4),1107,,,162,Trisomy
++22,Acute erythroleukemia (FAB type M6),1112,,,37,Trisomy
++22,Acute megakaryoblastic leukemia (FAB type M7),1113,,,44,Trisomy
+-22,"Acute myeloid leukemia, NOS",1101,,,221,Monosomy
+-22,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,26,Monosomy
+-22,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,60,Monosomy
+-22,Acute myelomonocytic leukemia (FAB type M4),1107,,,24,Monosomy
+-22,Acute erythroleukemia (FAB type M6),1112,,,44,Monosomy
+-22,Acute megakaryoblastic leukemia (FAB type M7),1113,,,31,Monosomy
++X,"Acute myeloid leukemia, NOS",1101,,,60,Trisomy
+-X,"Acute myeloid leukemia, NOS",1101,,,213,Monosomy
+-X,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,42,Monosomy
+-X,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,247,Monosomy
+-X,Acute myelomonocytic leukemia (FAB type M4),1107,,,32,Monosomy
++Y,"Acute myeloid leukemia, NOS",1101,,,62,Trisomy
+-Y,"Acute myeloid leukemia, NOS",1101,,,464,Monosomy
+-Y,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,58,Monosomy
+-Y,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,543,Monosomy
+-Y,Acute promyelocytic leukemia (FAB type M3),1106,,,36,Monosomy
+-Y,Acute myelomonocytic leukemia (FAB type M4),1107,,,81,Monosomy
+-Y,Acute erythroleukemia (FAB type M6),1112,,,48,Monosomy
++1,"Acute myeloid leukemia, special type",1199,,,2,Trisomy
+-1,Acute promyelocytic leukemia (FAB type M3),1106,,,2,Monosomy
+-1,Acute monoblastic leukemia (FAB type M5),1108,,,2,Monosomy
++2,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,2,Trisomy
+-2,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,2,Monosomy
++5,Acute promyelocytic leukemia (FAB type M3),1106,,,2,Trisomy
+-6,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,2,Monosomy
++7,Acute promyelocytic leukemia (FAB type M3),1106,,,2,Trisomy
++7,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,2,Trisomy
+-7,Acute basophilic leukemia,1115,,,2,Monosomy
++8,Acute basophilic leukemia,1115,,,2,Trisomy
+-8,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,2,Monosomy
+-9,"Acute myeloid leukemia, special type",1199,,,2,Monosomy
++10,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,2,Trisomy
+-10,"Acute myeloid leukemia, special type",1199,,,2,Monosomy
+-11,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,2,Monosomy
+-11,"Acute myeloid leukemia, special type",1199,,,2,Monosomy
++12,"Acute myeloid leukemia, special type",1199,,,2,Trisomy
+-12,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,2,Monosomy
+-12,"Acute myeloid leukemia, special type",1199,,,2,Monosomy
+-13,Acute basophilic leukemia,1115,,,2,Monosomy
+-17,"Acute myeloid leukemia, special type",1199,,,2,Monosomy
++18,"Acute myeloid leukemia, special type",1199,,,2,Trisomy
+-19,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,2,Monosomy
++20,Acute promyelocytic leukemia (FAB type M3),1106,,,2,Trisomy
+-22,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,2,Monosomy
++Y,Acute promyelocytic leukemia (FAB type M3),1106,,,2,Trisomy
++1,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,3,Trisomy
++2,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,3,Trisomy
+-2,Acute promyelocytic leukemia (FAB type M3),1106,,,3,Monosomy
+-2,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
++3,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Trisomy
+-3,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Monosomy
++4,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
+-4,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
++6,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
+-6,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,3,Monosomy
+-7,Acute eosinophilic leukemia,1117,,,3,Monosomy
++8,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
++10,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
++11,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Trisomy
++12,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,3,Trisomy
+-13,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Monosomy
++14,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,3,Trisomy
+-14,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Monosomy
++15,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,3,Trisomy
++15,Acute promyelocytic leukemia (FAB type M3),1106,,,3,Trisomy
++15,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,3,Trisomy
+-15,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
++16,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,3,Trisomy
++16,Acute promyelocytic leukemia (FAB type M3),1106,,,3,Trisomy
++16,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,3,Trisomy
++16,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Trisomy
+-16,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Monosomy
+-16,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
++17,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,3,Trisomy
++18,Acute promyelocytic leukemia (FAB type M3),1106,,,3,Trisomy
++18,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,3,Trisomy
+-18,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
++19,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
+-19,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Monosomy
+-19,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
+-20,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,3,Monosomy
+-20,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
++21,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
++22,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
++X,"Acute myeloid leukemia, special type",1199,,,3,Trisomy
++Y,Acute monoblastic leukemia (FAB type M5),1108,,,3,Trisomy
+-Y,"Acute myeloid leukemia, special type",1199,,,3,Monosomy
+-1,Acute myelomonocytic leukemia (FAB type M4),1107,,,4,Monosomy
++3,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,4,Trisomy
++3,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Trisomy
+-3,Acute promyelocytic leukemia (FAB type M3),1106,,,4,Monosomy
+-3,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Monosomy
+-4,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Monosomy
++5,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Trisomy
+-5,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Monosomy
++6,Acute promyelocytic leukemia (FAB type M3),1106,,,4,Trisomy
++7,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,4,Trisomy
+-8,"Acute myeloid leukemia, special type",1199,,,4,Monosomy
+-10,Acute promyelocytic leukemia (FAB type M3),1106,,,4,Monosomy
+-10,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,4,Monosomy
++12,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Trisomy
++12,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,4,Trisomy
++13,"Acute myeloid leukemia, special type",1199,,,4,Trisomy
+-13,Acute promyelocytic leukemia (FAB type M3),1106,,,4,Monosomy
+-13,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Monosomy
+-15,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Monosomy
++16,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,4,Trisomy
++17,Acute promyelocytic leukemia (FAB type M3),1106,,,4,Trisomy
++17,Acute monoblastic leukemia (FAB type M5),1108,,,4,Trisomy
++20,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,4,Trisomy
++20,"Acute myeloid leukemia, special type",1199,,,4,Trisomy
++22,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,4,Trisomy
+-22,Acute promyelocytic leukemia (FAB type M3),1106,,,4,Monosomy
+-22,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Monosomy
++X,Acute promyelocytic leukemia (FAB type M3),1106,,,4,Trisomy
+-X,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Monosomy
++Y,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,4,Trisomy
+-Y,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,4,Monosomy
+-1,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,5,Monosomy
++4,Acute promyelocytic leukemia (FAB type M3),1106,,,5,Trisomy
++5,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,5,Trisomy
++7,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,5,Trisomy
++10,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,5,Trisomy
+-10,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,5,Monosomy
++11,Acute promyelocytic leukemia (FAB type M3),1106,,,5,Trisomy
+-11,Acute promyelocytic leukemia (FAB type M3),1106,,,5,Monosomy
+-12,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,5,Monosomy
++15,Acute monoblastic leukemia (FAB type M5),1108,,,5,Trisomy
+-15,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,5,Monosomy
++19,Acute promyelocytic leukemia (FAB type M3),1106,,,5,Trisomy
+-19,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,5,Monosomy
+-19,Acute promyelocytic leukemia (FAB type M3),1106,,,5,Monosomy
++21,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,5,Trisomy
+-21,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,5,Monosomy
++Y,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,5,Trisomy
++2,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,6,Trisomy
++2,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,6,Trisomy
++2,Acute myelomonocytic leukemia (FAB type M4),1107,,,6,Trisomy
+-2,Acute monoblastic leukemia (FAB type M5),1108,,,6,Monosomy
+-4,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,6,Monosomy
+-4,Acute promyelocytic leukemia (FAB type M3),1106,,,6,Monosomy
++6,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,6,Trisomy
++7,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,6,Trisomy
++9,Acute promyelocytic leukemia (FAB type M3),1106,,,6,Trisomy
+-9,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,6,Monosomy
++11,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,6,Trisomy
+-11,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,6,Monosomy
+-12,Acute promyelocytic leukemia (FAB type M3),1106,,,6,Monosomy
++13,Acute promyelocytic leukemia (FAB type M3),1106,,,6,Trisomy
++15,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,6,Trisomy
++16,Acute megakaryoblastic leukemia (FAB type M7),1113,,,6,Trisomy
+-18,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,6,Monosomy
+-18,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,6,Monosomy
+-19,Acute monoblastic leukemia (FAB type M5),1108,,,6,Monosomy
+-X,Acute promyelocytic leukemia (FAB type M3),1106,,,6,Monosomy
++2,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,7,Trisomy
++2,Acute monoblastic leukemia (FAB type M5),1108,,,7,Trisomy
++3,Acute erythroleukemia (FAB type M6),1112,,,7,Trisomy
++4,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,7,Trisomy
+-4,Acute monoblastic leukemia (FAB type M5),1108,,,7,Monosomy
++5,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,7,Trisomy
++5,Acute erythroleukemia (FAB type M6),1112,,,7,Trisomy
+-6,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,7,Monosomy
+-6,Acute megakaryoblastic leukemia (FAB type M7),1113,,,7,Monosomy
++7,Acute monoblastic leukemia (FAB type M5),1108,,,7,Trisomy
+-15,Acute promyelocytic leukemia (FAB type M3),1106,,,7,Monosomy
++16,Acute erythroleukemia (FAB type M6),1112,,,7,Trisomy
++17,Acute megakaryoblastic leukemia (FAB type M7),1113,,,7,Trisomy
++18,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,7,Trisomy
++18,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,7,Trisomy
++20,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,7,Trisomy
+-20,Acute promyelocytic leukemia (FAB type M3),1106,,,7,Monosomy
+-20,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,7,Monosomy
+-21,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,7,Monosomy
++X,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,7,Trisomy
++Y,Acute megakaryoblastic leukemia (FAB type M7),1113,,,7,Trisomy
+-1,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,8,Monosomy
+-3,Acute monoblastic leukemia (FAB type M5),1108,,,8,Monosomy
+-8,Acute promyelocytic leukemia (FAB type M3),1106,,,8,Monosomy
+-8,Acute megakaryoblastic leukemia (FAB type M7),1113,,,8,Monosomy
+-9,Acute monoblastic leukemia (FAB type M5),1108,,,8,Monosomy
+-10,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,8,Monosomy
++12,Acute erythroleukemia (FAB type M6),1112,,,8,Trisomy
+-14,Acute promyelocytic leukemia (FAB type M3),1106,,,8,Monosomy
++16,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,8,Trisomy
++19,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,8,Trisomy
++22,Acute promyelocytic leukemia (FAB type M3),1106,,,8,Trisomy
++22,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,8,Trisomy
++Y,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,8,Trisomy
+-2,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,9,Monosomy
++4,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,9,Trisomy
++5,Acute megakaryoblastic leukemia (FAB type M7),1113,,,9,Trisomy
+-5,Acute promyelocytic leukemia (FAB type M3),1106,,,9,Monosomy
++9,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,9,Trisomy
++10,Acute promyelocytic leukemia (FAB type M3),1106,,,9,Trisomy
+-11,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,9,Monosomy
++16,Acute monoblastic leukemia (FAB type M5),1108,,,9,Trisomy
+-16,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,9,Monosomy
++18,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,9,Trisomy
+-22,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,9,Monosomy
++3,Acute myelomonocytic leukemia (FAB type M4),1107,,,10,Trisomy
+-4,Acute myelomonocytic leukemia (FAB type M4),1107,,,10,Monosomy
++5,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,10,Trisomy
+-6,Acute monoblastic leukemia (FAB type M5),1108,,,10,Monosomy
+-7,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,10,Monosomy
+-8,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,10,Monosomy
++9,Acute megakaryoblastic leukemia (FAB type M7),1113,,,10,Trisomy
+-9,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,10,Monosomy
++13,Acute monoblastic leukemia with differentiation (FAB type M5b),1110,,,10,Trisomy
++16,Acute myelomonocytic leukemia (FAB type M4),1107,,,10,Trisomy
++17,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,10,Trisomy
++17,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,10,Trisomy
++20,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,10,Trisomy
+-21,Acute promyelocytic leukemia (FAB type M3),1106,,,10,Monosomy
+-22,Acute monoblastic leukemia (FAB type M5),1108,,,10,Monosomy
++X,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,10,Trisomy
+-1,Acute megakaryoblastic leukemia (FAB type M7),1113,,,11,Monosomy
++3,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,11,Trisomy
+-6,Acute promyelocytic leukemia (FAB type M3),1106,,,11,Monosomy
++7,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,11,Trisomy
+-8,Acute monoblastic leukemia (FAB type M5),1108,,,11,Monosomy
++9,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,11,Trisomy
++12,Acute megakaryoblastic leukemia (FAB type M7),1113,,,11,Trisomy
++17,Acute erythroleukemia (FAB type M6),1112,,,11,Trisomy
++18,Acute monoblastic leukemia (FAB type M5),1108,,,11,Trisomy
+-20,Acute monoblastic leukemia (FAB type M5),1108,,,11,Monosomy
+-Y,Acute megakaryoblastic leukemia (FAB type M7),1113,,,11,Monosomy
+-1,Acute erythroleukemia (FAB type M6),1112,,,12,Monosomy
++5,Acute monoblastic leukemia (FAB type M5),1108,,,12,Trisomy
++6,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,12,Trisomy
++6,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,12,Trisomy
++12,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,12,Trisomy
+-13,Acute monoblastic leukemia (FAB type M5),1108,,,12,Monosomy
+-17,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,12,Monosomy
++X,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,12,Trisomy
+-1,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,13,Monosomy
+-2,Acute megakaryoblastic leukemia (FAB type M7),1113,,,13,Monosomy
++3,Acute monoblastic leukemia (FAB type M5),1108,,,13,Trisomy
++4,Acute erythroleukemia (FAB type M6),1112,,,13,Trisomy
+-9,Acute promyelocytic leukemia (FAB type M3),1106,,,13,Monosomy
++10,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,13,Trisomy
+-11,Acute monoblastic leukemia (FAB type M5),1108,,,13,Monosomy
+-13,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,13,Monosomy
+-16,Acute monoblastic leukemia (FAB type M5),1108,,,13,Monosomy
++18,Acute erythroleukemia (FAB type M6),1112,,,13,Trisomy
++20,Acute monoblastic leukemia (FAB type M5),1108,,,13,Trisomy
++X,Acute monoblastic leukemia (FAB type M5),1108,,,13,Trisomy
++Y,Acute myelomonocytic leukemia (FAB type M4),1107,,,13,Trisomy
++Y,Acute erythroleukemia (FAB type M6),1112,,,13,Trisomy
+-2,Acute myelomonocytic leukemia (FAB type M4),1107,,,14,Monosomy
+-2,Acute erythroleukemia (FAB type M6),1112,,,14,Monosomy
++7,Acute myelomonocytic leukemia (FAB type M4),1107,,,14,Trisomy
++7,Acute erythroleukemia (FAB type M6),1112,,,14,Trisomy
++13,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,14,Trisomy
+-14,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,14,Monosomy
+-15,Acute monoblastic leukemia (FAB type M5),1108,,,14,Monosomy
++X,Acute erythroleukemia (FAB type M6),1112,,,14,Trisomy
+-Y,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,14,Monosomy
++1,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,15,Trisomy
++5,Acute myelomonocytic leukemia (FAB type M4),1107,,,15,Trisomy
++12,Acute monoblastic leukemia (FAB type M5),1108,,,15,Trisomy
++14,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,15,Trisomy
++14,Acute monoblastic leukemia (FAB type M5),1108,,,15,Trisomy
+-14,Acute monoblastic leukemia (FAB type M5),1108,,,15,Monosomy
++15,Acute megakaryoblastic leukemia (FAB type M7),1113,,,15,Trisomy
+-16,Acute promyelocytic leukemia (FAB type M3),1106,,,15,Monosomy
+-17,Acute promyelocytic leukemia (FAB type M3),1106,,,15,Monosomy
+-18,Acute promyelocytic leukemia (FAB type M3),1106,,,15,Monosomy
++21,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,15,Trisomy
++22,Acute monoblastic leukemia (FAB type M5),1108,,,15,Trisomy
+-X,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,15,Monosomy
++1,Acute megakaryoblastic leukemia (FAB type M7),1113,,,16,Trisomy
+-10,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,16,Monosomy
+-10,Acute myelomonocytic leukemia (FAB type M4),1107,,,16,Monosomy
+-10,Acute megakaryoblastic leukemia (FAB type M7),1113,,,16,Monosomy
++15,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,16,Trisomy
++17,Acute myelomonocytic leukemia (FAB type M4),1107,,,16,Trisomy
+-19,Acute megakaryoblastic leukemia (FAB type M7),1113,,,16,Monosomy
++1,Acute monoblastic leukemia (FAB type M5),1108,,,17,Trisomy
++3,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,17,Trisomy
++4,Acute megakaryoblastic leukemia (FAB type M7),1113,,,17,Trisomy
+-6,Acute myelomonocytic leukemia (FAB type M4),1107,,,17,Monosomy
+-12,Acute monoblastic leukemia (FAB type M5),1108,,,17,Monosomy
++9,Acute monoblastic leukemia (FAB type M5),1108,,,18,Trisomy
+-9,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,18,Monosomy
++13,Acute erythroleukemia (FAB type M6),1112,,,18,Trisomy
++18,Acute megakaryoblastic leukemia (FAB type M7),1113,,,18,Trisomy
++20,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,18,Trisomy
+-21,Acute monoblastic leukemia (FAB type M5),1108,,,18,Monosomy
++X,Acute myelomonocytic leukemia (FAB type M4),1107,,,18,Trisomy
+-X,Acute monoblastic leukemia (FAB type M5),1108,,,18,Monosomy
+-2,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,19,Monosomy
++5,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,19,Trisomy
+-6,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,19,Monosomy
+-7,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,19,Monosomy
+-8,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,19,Monosomy
++10,Acute monoblastic leukemia (FAB type M5),1108,,,19,Trisomy
++15,Acute erythroleukemia (FAB type M6),1112,,,19,Trisomy
+-15,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,19,Monosomy
++20,Acute erythroleukemia (FAB type M6),1112,,,19,Trisomy
+-20,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,19,Monosomy
+-21,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,19,Monosomy
++X,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,19,Trisomy
++X,Acute megakaryoblastic leukemia (FAB type M7),1113,,,19,Trisomy
++Y,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,19,Trisomy
+-Y,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,19,Monosomy
+-Y,Acute monoblastic leukemia (FAB type M5),1108,,,19,Monosomy
+-3,Acute myelomonocytic leukemia (FAB type M4),1107,,,20,Monosomy
++9,Acute erythroleukemia (FAB type M6),1112,,,20,Trisomy
++11,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,20,Trisomy
+-11,Acute myelomonocytic leukemia (FAB type M4),1107,,,20,Monosomy
++12,Acute myelomonocytic leukemia (FAB type M4),1107,,,20,Trisomy
++19,Acute monoblastic leukemia without differentiation (FAB type M5a),1109,,,20,Trisomy
+-19,Acute myelomonocytic leukemia (FAB type M4),1107,,,20,Monosomy
++1,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,21,Trisomy
++2,Acute erythroleukemia (FAB type M6),1112,,,21,Trisomy
++3,Acute megakaryoblastic leukemia (FAB type M7),1113,,,21,Trisomy
+-5,Acute monoblastic leukemia (FAB type M5),1108,,,21,Monosomy
+-12,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,21,Monosomy
++13,Acute megakaryoblastic leukemia (FAB type M7),1113,,,21,Trisomy
++14,Acute erythroleukemia (FAB type M6),1112,,,21,Trisomy
+-14,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,21,Monosomy
+-16,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,21,Monosomy
++18,Acute myelomonocytic leukemia (FAB type M4),1107,,,21,Trisomy
+-18,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,21,Monosomy
++20,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,21,Trisomy
++22,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,21,Trisomy
+-2,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,22,Monosomy
+-3,Acute myeloblastic leukemia with minimal differentiation (FAB type M0),1102,,,22,Monosomy
+-7,Acute promyelocytic leukemia (FAB type M3),1106,,,22,Monosomy
+-11,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,22,Monosomy
++14,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,22,Trisomy
+-14,Acute myelomonocytic leukemia (FAB type M4),1107,,,22,Monosomy
+-8,Acute erythroleukemia (FAB type M6),1112,,,23,Monosomy
++10,Acute erythroleukemia (FAB type M6),1112,,,23,Trisomy
+-18,Acute monoblastic leukemia (FAB type M5),1108,,,23,Monosomy
+-20,Acute megakaryoblastic leukemia (FAB type M7),1113,,,23,Monosomy
+-X,Acute megakaryoblastic leukemia (FAB type M7),1113,,,23,Monosomy
++4,Acute monoblastic leukemia (FAB type M5),1108,,,25,Trisomy
++7,Acute megakaryoblastic leukemia (FAB type M7),1113,,,25,Trisomy
++9,Acute myeloblastic leukemia without maturation (FAB type M1),1103,,,25,Trisomy
+-10,Acute monoblastic leukemia (FAB type M5),1108,,,25,Monosomy
++12,Acute myeloblastic leukemia with maturation (FAB type M2),1104,,,25,Trisomy
++14,Acute myelomonocytic leukemia (FAB type M4),1107,,,25,Trisomy
++17,"Acute myeloid leukemia, NOS",1101,,,25,Trisomy
++11,Acute erythroleukemia (FAB type M6),1112,,,28,Trisomy
+-X,Acute erythroleukemia (FAB type M6),1112,,,28,Monosomy
