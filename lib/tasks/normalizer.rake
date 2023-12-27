@@ -49,7 +49,11 @@ namespace :normalizer do
   # bundle exec rake normalizer:normalize
   desc "Normalize"
   task :normalize, [:west_mrn] => :environment do |t, args|
-    # accession_nbr_formatted = ''
+    accession_nbr_formatted = nil
+    puts ENV['ACCESSION_NBR_FORMATTED']
+    if ENV['ACCESSION_NBR_FORMATTED'].present?
+      accession_nbr_formatted =  ENV['ACCESSION_NBR_FORMATTED']
+    end
     # accession_nbr_formatted = nil
     if accession_nbr_formatted
       model = PathologyCase.where(accession_nbr_formatted: accession_nbr_formatted)
@@ -291,12 +295,12 @@ def normalize_numerical_chromosomal_abnormality(pathology_case_finding)
     regular_expressions << Regexp.new(expression, Regexp::IGNORECASE)
 
     ['trisomy', 'gain', 'gains', 'addition', 'additions'].each do |abnormality|
-      expression = '\b' + abnormality + '(?: of)?(?: Chromosome|Chromosomes)? ' + chromosome.to_s + '\b'
+      expression = '\b' + abnormality + '(?: of)?(?: Chromosome)?(?: Chromosomes)?\s*' + chromosome.to_s+ '\b'
       regular_expressions << Regexp.new(expression, Regexp::IGNORECASE)
     end
 
     ['trisomy', 'gain', 'gains', 'addition', 'additions'].each do |abnormality|
-      expression = '\b' + '(?: Chromosome|Chromosomes)? ' + chromosome.to_s + '\s'+ abnormality +'\b'
+      expression = '\b' + '(?: Chromosome)?(?: Chromosome)?\s*' + chromosome.to_s + '\s*'+ abnormality +'\b'
       regular_expressions << Regexp.new(expression, Regexp::IGNORECASE)
     end
 
@@ -317,6 +321,7 @@ def normalize_structural_chromosomal_abnormality(pathology_case_finding)
   genetic_abnormality_name = pathology_case_finding.genetic_abnormality_name.dup
   genes.each do |gene|
     genetic_abnormality_name.gsub!(" #{gene}", '')
+    genetic_abnormality_name.gsub!("/#{gene}", '')
     puts 'genetic_abnormality_name'
     puts genetic_abnormality_name
   end
@@ -330,6 +335,7 @@ def normalize_structural_chromosomal_abnormality(pathology_case_finding)
   genetic_abnormality_name = pathology_case_finding.genetic_abnormality_name.dup
   genes.each do |gene|
     genetic_abnormality_name.gsub!(" #{gene}", '')
+    genetic_abnormality_name.gsub!("/#{gene}", '')
     puts 'genetic_abnormality_name'
     puts genetic_abnormality_name
   end
@@ -441,7 +447,7 @@ def normalize_structural_chromosomal_abnormality_addition(pathology_case_finding
 end
 
 def normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding, genetic_abnormality_name)
-  deletion_synonyms = ['deletion', 'deletions', 'deletion of', 'loss', 'loss of', 'del'].each do |deletion_synonym|
+  deletion_synonyms = ['deletion', 'deletions', 'deletion of', 'deletions of', 'loss', 'loss of', 'del'].each do |deletion_synonym|
     expression = '\b' + deletion_synonym + '\s*\((2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\)'
     puts 'expression'
     puts expression
@@ -496,7 +502,7 @@ def normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding
     end
   end
 
-  deletion_synonyms = ['deletion', 'deletion of', 'deletion of chromosome', 'loss', 'loss of', 'del'].each do |deletion_synonym|
+  deletion_synonyms = ['deletion', 'deletion of', 'deletion of chromosome', 'deletion of long arm of chromosome', 'deletion of short arm of chromosome','loss', 'loss of', 'del'].each do |deletion_synonym|
     expression = '\b' + deletion_synonym +'\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*'
     puts 'expression'
     puts expression
@@ -532,7 +538,7 @@ def gene_list(genetic_abnormality_name, options = {})
     end
   end
 
-  ['D20S108', 'D7S486', 'D13S319', 'S7S486'].each do |dna_marker|
+  ['MLL', 'D20S108', 'D7S486', 'D13S319', 'S7S486'].each do |dna_marker|
     expression = "#{dna_marker}"
     regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
     if genetic_abnormality_name.match(regular_expression)
