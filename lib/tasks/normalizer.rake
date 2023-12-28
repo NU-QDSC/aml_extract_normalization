@@ -268,7 +268,7 @@ def normalize_numerical_chromosomal_abnormality(pathology_case_finding)
     regular_expressions = []
     expression = '(?<!\w|\d)\-' + chromosome.to_s + '\b'
     regular_expressions << Regexp.new(expression, Regexp::IGNORECASE)
-    ['monosomy', 'loss', 'deletion', 'deletions', 'deletion of the long arm of', 'deletion of the short arm of'].each do |abnormality|
+    ['monosomy', 'loss', 'losses', 'deletion', 'deletions', 'deletion of the long arm of', 'deletion of the short arm of'].each do |abnormality|
       expression = '\b' + abnormality + '(?: of)?(?: Chromosome)?(?: Chromosomes)?\s*' + chromosome.to_s+ '\b'
       puts expression
       regular_expressions << Regexp.new(expression, Regexp::IGNORECASE)
@@ -286,6 +286,22 @@ def normalize_numerical_chromosomal_abnormality(pathology_case_finding)
         pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization, normalization_type: 'numerical chromosomal', match_token: m.to_s)
         pathology_case_finding.save!
         puts 'got you numerical_chromosomal_abnormality 1!'
+      end
+    end
+
+    ['monosomy', 'loss', 'losses', 'deletion', 'deletions', 'deletion of the long arm of', 'deletion of the short arm of'].each do |abnormality|
+      chromosomes.each do |other_chromosome|
+        expression = '\b' + abnormality + '(?: of)?(?: Chromosomes)?\s*' + chromosome.to_s + '\s*and\s*' + other_chromosome.to_s + '\b'
+        puts 'new guy'
+        puts expression
+        regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
+        m = pathology_case_finding.genetic_abnormality_name.match(regular_expression)
+        if m
+          other_normalization = "#{other_chromosome} monosomy"
+          pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: other_normalization, normalization_type: 'numerical chromosomal', match_token: m.to_s)
+          pathology_case_finding.save!
+          puts 'got you numerical_chromosomal_abnormality 1!'
+        end
       end
     end
 
@@ -310,6 +326,22 @@ def normalize_numerical_chromosomal_abnormality(pathology_case_finding)
         pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization, normalization_type: 'numerical chromosomal', match_token: m.to_s)
         pathology_case_finding.save!
         puts 'got you numerical_chromosomal_abnormality 2!'
+      end
+    end
+
+    ['trisomy', 'gain', 'gains', 'addition', 'additions'].each do |abnormality|
+      chromosomes.each do |other_chromosome|
+        expression = '\b' + abnormality + '(?: of)?(?: Chromosomes)?\s*' + chromosome.to_s + '\s*and\s*' + other_chromosome.to_s + '\b'
+        puts 'new guy'
+        puts expression
+        regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
+        m = pathology_case_finding.genetic_abnormality_name.match(regular_expression)
+        if m
+          other_normalization = "#{other_chromosome} monosomy"
+          pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: other_normalization, normalization_type: 'numerical chromosomal', match_token: m.to_s)
+          pathology_case_finding.save!
+          puts 'got you numerical_chromosomal_abnormality 1!'
+        end
       end
     end
   end
