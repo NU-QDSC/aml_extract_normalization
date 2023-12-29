@@ -49,26 +49,30 @@ namespace :normalizer do
   # bundle exec rake normalizer:normalize
   desc "Normalize"
   task :normalize, [:west_mrn] => :environment do |t, args|
+    # PathologyCaseFindingNormalization.delete_all
     accession_nbr_formatted = nil
     puts ENV['ACCESSION_NBR_FORMATTED']
     if ENV['ACCESSION_NBR_FORMATTED'].present?
-      accession_nbr_formatted =  ENV['ACCESSION_NBR_FORMATTED']
+      accession_nbr_formatted = ENV['ACCESSION_NBR_FORMATTED']
     end
-    # accession_nbr_formatted = nil
     if accession_nbr_formatted
-      model = PathologyCase.where(accession_nbr_formatted: accession_nbr_formatted)
-      pathology_case = model.first
-      pathology_case.pathology_case_findings.each do |pathology_case_finding|
-        pathology_case_finding.pathology_case_finding_normalizations.each do |pathology_case_finding_normalization|
-          pathology_case_finding_normalization.destroy
+      pathology_cases = PathologyCase.where(accession_nbr_formatted: accession_nbr_formatted).all
+      pathology_cases.each do |pathology_case|
+        puts 'fuck 1'
+        puts pathology_case.pathology_case_findings.size
+        pathology_case.pathology_case_findings.each do |pathology_case_finding|
+          pathology_case_finding.pathology_case_finding_normalizations.each do |pathology_case_finding_normalization|
+            puts 'fuck 3'
+            pathology_case_finding_normalization.destroy!
+          end
         end
       end
     else
       PathologyCaseFindingNormalization.delete_all
-      model = PathologyCase
+      pathology_cases = PathologyCase.all
     end
 
-    model.all.each do |pathology_case|
+    pathology_cases.each do |pathology_case|
       pathology_case.pathology_case_findings.each_with_index do |pathology_case_finding, i|
         genes = gene_list(pathology_case_finding.genetic_abnormality_name, discard_substrings: true)
         puts '------------------------'
@@ -107,7 +111,7 @@ namespace :normalizer do
     end
 
     PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.find(pathology_case_finding_normalization.pathology_case_finding_id) }.each do |pathology_case_finding|
-      pathology_case_finding.pathology_case_finding_normalizations.where("normalization_type !='fusion'").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
+      pathology_case_finding.pathology_case_finding_normalizations.where("gene_1 IS NOT NULL AND normalization_type !='fusion'").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
         puts 'pathology_case_finding_id'
         puts pathology_case_finding_normalizations.first.pathology_case_finding.id
         puts 'genetic_abnormality_name'
@@ -125,6 +129,19 @@ namespace :normalizer do
         end
       end
     end
+
+    PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition')").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.find(pathology_case_finding_normalization.pathology_case_finding_id) }.each do |pathology_case_finding|
+      pathology_case_finding.pathology_case_finding_normalizations.where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition'").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
+        if pathology_case_finding_normalizations.size > 1
+          longest_match_token = pathology_case_finding_normalizations.map { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length }.max
+          pathology_case_finding_normalizations.select { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length < longest_match_token }.each do |pathology_case_finding_normalization|
+            pathology_case_finding_normalization.destroy!
+          end
+        else
+          puts 'only one per structural chromosmal'
+        end
+      end
+    end
   end
 end
 
@@ -132,6 +149,7 @@ def load_pathology_cases_and_findings(files, options= {})
   options = { west_mrn: nil }.merge(options)
   PathologyCase.delete_all
   PathologyCaseFinding.delete_all
+  PathologyCaseFindingNormalization.delete_all
   files.each do |file|
     pathology_cases = Roo::Spreadsheet.open(file)
     pathology_case_map = {
@@ -357,10 +375,11 @@ def normalize_structural_chromosomal_abnormality(pathology_case_finding)
     puts 'genetic_abnormality_name'
     puts genetic_abnormality_name
   end
-  normalize_structural_chromosomal_abnormality_addition(pathology_case_finding, genetic_abnormality_name)
 
   if genes.empty?
     normalize_structural_chromosomal_abnormality_addition(pathology_case_finding, pathology_case_finding.genetic_abnormality_name)
+  else
+    normalize_structural_chromosomal_abnormality_addition(pathology_case_finding, genetic_abnormality_name)
   end
 
   #deletion
@@ -371,10 +390,11 @@ def normalize_structural_chromosomal_abnormality(pathology_case_finding)
     puts 'genetic_abnormality_name'
     puts genetic_abnormality_name
   end
-  normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding, genetic_abnormality_name)
 
   if genes.empty?
     normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding, pathology_case_finding.genetic_abnormality_name)
+  else
+    normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding, genetic_abnormality_name)
   end
 
   #derivation
@@ -409,8 +429,9 @@ def normalize_structural_chromosomal_abnormality(pathology_case_finding)
 end
 
 def normalize_structural_chromosomal_abnormality_addition(pathology_case_finding, genetic_abnormality_name)
+  #prefix abnormality with structure in parentheses
   addition_synonyms = ['addition', 'additions', 'addition of', 'gain', 'gains', 'gain of', 'add'].each do |addition_synonym|
-    expression = '\b' + addition_synonym + '\s*\((2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\)'
+    expression = '(\b|\()' + addition_synonym + '\s*\((2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\)' + '(\b|\))'
     puts 'expression'
     puts expression
     regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
@@ -430,30 +451,9 @@ def normalize_structural_chromosomal_abnormality_addition(pathology_case_finding
     end
   end
 
-  addition_synonyms = ['add', 'addition', 'gain'].each do |addition_synonym|
-    expression = '\b\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*' + addition_synonym + '\b'
-    puts 'expression'
-    puts expression
-    regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
-    genetic_abnormality_name.match(regular_expression)
-    m = genetic_abnormality_name.match(regular_expression)
-    if m
-      if addition_synonym == 'add'
-        normalization_name = m.to_s
-      else
-        regular_expression = Regexp.new(addition_synonym + '\s*', Regexp::IGNORECASE)
-        normalization_name = m.to_s.downcase.gsub(regular_expression, 'add')
-        chromosome, add = normalization_name.split(' ')
-        normalization_name = "#{add}(#{chromosome})"
-      end
-      pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization_name, normalization_type: 'structural chromosomal addition', match_token: m.to_s)
-      pathology_case_finding.save!
-      puts 'got you normalize_structural_chromosomal_abnormality addition!'
-    end
-  end
-
+  #prefix abnormality with structure not in parentheses
   addition_synonyms = ['addition', 'additions', 'addition of', 'gain', 'gains', 'gain of', 'add'].each do |addition_synonym|
-    expression = '\b' + addition_synonym +'\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*'
+    expression = '(\b|\()' + addition_synonym +'\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*' + '(\b|\))'
     puts 'expression'
     puts expression
     regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
@@ -476,9 +476,40 @@ def normalize_structural_chromosomal_abnormality_addition(pathology_case_finding
       puts 'got you normalize_structural_chromosomal_abnormality addition!'
     end
   end
+
+  #postfix abnormality with structure not in parentheses
+  addition_synonyms = ['add', 'addition', 'gain'].each do |addition_synonym|
+    expression = '(\b|\()\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*' + addition_synonym + '(\b|\))'
+    puts 'expression'
+    puts expression
+    regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
+    genetic_abnormality_name.match(regular_expression)
+    m = genetic_abnormality_name.match(regular_expression)
+    if m
+      if addition_synonym == 'add'
+        normalization_name = m.to_s
+        chromosome, add = normalization_name.split('add')
+        chromosome.gsub!('(', '')
+        chromosome.gsub!(' ', '')
+        normalization_name = "add(#{chromosome})"
+      else
+        regular_expression = Regexp.new(addition_synonym + '\s*', Regexp::IGNORECASE)
+        normalization_name = m.to_s.downcase.gsub(regular_expression, 'add')
+        chromosome, add = normalization_name.split(' ')
+        chromosome.gsub!('(', '')
+        normalization_name = "#{add}(#{chromosome})"
+      end
+      pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization_name, normalization_type: 'structural chromosomal addition', match_token: m.to_s)
+      pathology_case_finding.save!
+      pathology_case_finding_normalization = pathology_case_finding.pathology_case_finding_normalizations.last
+
+      puts 'got you normalize_structural_chromosomal_abnormality addition!'
+    end
+  end
 end
 
 def normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding, genetic_abnormality_name)
+  #prefix abnormality with structure in parentheses
   deletion_synonyms = ['deletion', 'deletions', 'deletion of', 'deletions of', 'loss', 'loss of', 'del'].each do |deletion_synonym|
     expression = '\b' + deletion_synonym + '\s*\((2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\)'
     puts 'expression'
@@ -498,43 +529,8 @@ def normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding
     end
   end
 
-  deletion_synonyms = ['deletion', 'deletions', 'loss'].each do |deletion_synonym|
-    expression = '\b\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*' + deletion_synonym + '\b'
-    puts 'expression'
-    puts expression
-    regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
-    genetic_abnormality_name.match(regular_expression)
-    m = genetic_abnormality_name.match(regular_expression)
-    if m
-      regular_expression = Regexp.new(deletion_synonym + '\s*', Regexp::IGNORECASE)
-      normalization_name = m.to_s.downcase.gsub(regular_expression, 'del')
-      chromosome, del = normalization_name.split(' ')
-      normalization_name = "#{del}(#{chromosome})"
-      pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization_name, normalization_type: 'structural chromosomal deletion', match_token: m.to_s)
-      pathology_case_finding.save!
-      puts 'got you normalize_structural_chromosomal_abnormality deletion!'
-    end
-  end
-
-  deletion_synonyms = ['deletion', 'deletions', 'loss'].each do |deletion_synonym|
-    expression = '\b\s*\((2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\)\s*' + deletion_synonym + '\b'
-    puts 'expression'
-    puts expression
-    regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
-    genetic_abnormality_name.match(regular_expression)
-    m = genetic_abnormality_name.match(regular_expression)
-    if m
-      regular_expression = Regexp.new(deletion_synonym + '\s*', Regexp::IGNORECASE)
-      normalization_name = m.to_s.downcase.gsub(regular_expression, 'del')
-      chromosome, del = normalization_name.split(' ')
-      normalization_name = "#{del}#{chromosome}"
-      pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization_name, normalization_type: 'structural chromosomal deletion', match_token: m.to_s)
-      pathology_case_finding.save!
-      puts 'got you normalize_structural_chromosomal_abnormality deletion!'
-    end
-  end
-
-  deletion_synonyms = ['deletion', 'deletion of', 'deletion of chromosome', 'deletion of long arm of chromosome', 'deletion of short arm of chromosome','loss', 'loss of', 'del'].each do |deletion_synonym|
+  #prefix abnormality with structure not in parentheses
+  deletion_synonyms = ['deletion', 'deletions', 'deletion of', 'deletions of', 'deletion of chromosome', 'deletion of long arm of chromosome', 'deletion of short arm of chromosome', 'loss', 'loss of', 'del'].each do |deletion_synonym|
     expression = '\b' + deletion_synonym +'\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*'
     puts 'expression'
     puts expression
@@ -553,6 +549,44 @@ def normalize_structural_chromosomal_abnormality_deletion(pathology_case_finding
         normalization_name = "#{del}(#{chromosome})"
       end
 
+      pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization_name, normalization_type: 'structural chromosomal deletion', match_token: m.to_s)
+      pathology_case_finding.save!
+      puts 'got you normalize_structural_chromosomal_abnormality deletion!'
+    end
+  end
+
+  #postfix abnormality with structure not in parentheses
+  deletion_synonyms = ['deletion', 'deletions', 'loss'].each do |deletion_synonym|
+    expression = '\b\s*(2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\s*' + deletion_synonym + '\b'
+    puts 'expression'
+    puts expression
+    regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
+    genetic_abnormality_name.match(regular_expression)
+    m = genetic_abnormality_name.match(regular_expression)
+    if m
+      regular_expression = Regexp.new(deletion_synonym + '\s*', Regexp::IGNORECASE)
+      normalization_name = m.to_s.downcase.gsub(regular_expression, 'del')
+      chromosome, del = normalization_name.split(' ')
+      normalization_name = "#{del}(#{chromosome})"
+      pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization_name, normalization_type: 'structural chromosomal deletion', match_token: m.to_s)
+      pathology_case_finding.save!
+      puts 'got you normalize_structural_chromosomal_abnormality deletion!'
+    end
+  end
+
+  #postfix abnormality with structure in parentheses
+  deletion_synonyms = ['deletion', 'deletions', 'loss'].each do |deletion_synonym|
+    expression = '\b\s*\((2[0-2]|[01]?[0-9]|X|Y)(?![0-9])[\w.]*\)\s*' + deletion_synonym + '\b'
+    puts 'expression'
+    puts expression
+    regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
+    genetic_abnormality_name.match(regular_expression)
+    m = genetic_abnormality_name.match(regular_expression)
+    if m
+      regular_expression = Regexp.new(deletion_synonym + '\s*', Regexp::IGNORECASE)
+      normalization_name = m.to_s.downcase.gsub(regular_expression, 'del')
+      chromosome, del = normalization_name.split(' ')
+      normalization_name = "#{del}#{chromosome}"
       pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: normalization_name, normalization_type: 'structural chromosomal deletion', match_token: m.to_s)
       pathology_case_finding.save!
       puts 'got you normalize_structural_chromosomal_abnormality deletion!'

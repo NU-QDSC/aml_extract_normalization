@@ -71,3 +71,5 @@ yarn-debug.log*
 #custom
 .DS_STORE
 /lib/setup/data/
+
+/doc/scratch.sql
