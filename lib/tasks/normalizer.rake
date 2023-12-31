@@ -1,3 +1,4 @@
+require 'csv'
 namespace :normalizer do
   # bundle exec rake normalizer:load_vocabulary
   desc "Load abnormalities"
@@ -73,13 +74,13 @@ namespace :normalizer do
     pathology_cases.each do |pathology_case|
       pathology_case.pathology_case_findings.each_with_index do |pathology_case_finding, i|
         genes = gene_list(pathology_case_finding.genetic_abnormality_name, discard_substrings: true)
-        puts '------------------------'
-        puts 'genetic_abnormality_name'
-        puts pathology_case_finding.genetic_abnormality_name
+        # puts '------------------------'
+        # puts 'genetic_abnormality_name'
+        # puts pathology_case_finding.genetic_abnormality_name
         genes.each do |gene|
-          puts '||||||||||||||||||||'
-          puts 'gene'
-          puts gene
+          # puts '||||||||||||||||||||'
+          # puts 'gene'
+          # puts gene
           gene_abnormalities = []
           gene_abnormalities << { gene: gene, normalization_type: 'gene amplification', normalization: "#{gene} amplification", pre_abnormality_tokens: ['amplification of', 'amplifications of', 'gain of', 'amplification', 'amplifications', 'gain', 'gains'], post_abnormality_tokens: ['amplification','amplifications', 'gain'] }
           gene_abnormalities << { gene: gene, normalization_type: 'gene rearrangement', normalization: "#{gene} rearrangement", pre_abnormality_tokens: ['rearrangement of', 'rearrangements of', 'rearrangement'], post_abnormality_tokens: ['rearrangement', 'rearrangements'] }
@@ -110,20 +111,20 @@ namespace :normalizer do
 
     PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.find(pathology_case_finding_normalization.pathology_case_finding_id) }.each do |pathology_case_finding|
       pathology_case_finding.pathology_case_finding_normalizations.where("gene_1 IS NOT NULL AND normalization_type !='fusion'").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
-        puts 'pathology_case_finding_id'
-        puts pathology_case_finding_normalizations.first.pathology_case_finding.id
-        puts 'genetic_abnormality_name'
-        puts pathology_case_finding_normalizations.first.pathology_case_finding.genetic_abnormality_name
-
-        puts 'gene'
-        puts gene
+        # puts 'pathology_case_finding_id'
+        # puts pathology_case_finding_normalizations.first.pathology_case_finding.id
+        # puts 'genetic_abnormality_name'
+        # puts pathology_case_finding_normalizations.first.pathology_case_finding.genetic_abnormality_name
+        #
+        # puts 'gene'
+        # puts gene
         if pathology_case_finding_normalizations.size > 1
           shortest_match_token = pathology_case_finding_normalizations.map { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length }.min
           pathology_case_finding_normalizations.select { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length != shortest_match_token }.each do |pathology_case_finding_normalization|
             pathology_case_finding_normalization.destroy!
           end
         else
-          puts 'only one per gene'
+          # puts 'only one per gene'
         end
       end
     end
@@ -140,6 +141,56 @@ namespace :normalizer do
     #     end
     #   end
     # end
+  end
+
+  # bundle exec rake normalizer:compare_gold_standard
+  desc "Compare to gold standard"
+  task(compare_gold_standard: :environment) do |t, args|
+    file = 'lib/setup/data/normalization_gold_standard/gold_normalizations.xlsx'
+    gold_normalizations_form_file = Roo::Spreadsheet.open(file)
+    gold_normalizations_form_file = gold_normalizations_form_file.sheet(0).to_a
+    headers = gold_normalizations_form_file.first
+    gold_normalizations = gold_normalizations_form_file.drop(1).map do |row|
+      Hash[headers.zip(row)]
+    end
+    puts gold_normalizations
+
+    file = 'lib/setup/data/normalization_gold_standard/normalizations.xlsx'
+    normalizations_form_file = Roo::Spreadsheet.open(file)
+    normalizations_form_file = normalizations_form_file.sheet(0).to_a
+    headers = normalizations_form_file.first
+    normalizations = normalizations_form_file.drop(1).map do |row|
+      Hash[headers.zip(row)]
+    end
+    puts normalizations
+
+    file_path = "lib/setup/data/normalization_gold_standard/normalizations_compared.csv"
+    CSV.open(file_path, "w") do |csv|
+      headers = normalizations.first.keys
+
+      headers.unshift('status')
+      headers.unshift('evaluation')
+      headers.unshift('gold_standard_status')
+      csv << headers
+      normalizations.each do |normalization|
+        gold_normalization = gold_normalizations.detect { |gold_normalization| gold_normalization['accession_nbr_formatted'] == normalization['accession_nbr_formatted'] && gold_normalization['genetic_abnormality_name'] == normalization['genetic_abnormality_name'] && gold_normalization['normalization_name'] == normalization['normalization_name'] }
+        if gold_normalization
+          gold_standard_status = 'match'
+          evaluation = gold_normalization['evaluation']
+          status= gold_normalization['status']
+        else
+          gold_standard_status = 'no match'
+          gold_normalization = gold_normalizations.detect { |gold_normalization| gold_normalization['accession_nbr_formatted'] == normalization['accession_nbr_formatted'] && gold_normalization['genetic_abnormality_name'] == normalization['genetic_abnormality_name'] }
+          evaluation = gold_normalization['evaluation']
+          status= gold_normalization['status']
+        end
+        values = normalization.values
+        values.unshift(status)
+        values.unshift(evaluation)
+        values.unshift(gold_standard_status)
+        csv << values
+      end
+    end
   end
 end
 
@@ -353,7 +404,7 @@ def normalize_numerical_chromosomal_abnormality(pathology_case_finding)
         regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
         m = pathology_case_finding.genetic_abnormality_name.match(regular_expression)
         if m
-          other_normalization = "#{other_chromosome} monosomy"
+          other_normalization = "#{other_chromosome} trisomy"
           pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: other_normalization, normalization_type: 'numerical chromosomal', match_token: m.to_s)
           pathology_case_finding.save!
           puts 'got you numerical_chromosomal_abnormality 1!'
@@ -405,12 +456,21 @@ def normalize_structural_chromosomal_abnormality(pathology_case_finding)
     puts 'got you normalize_structural_chromosomal_abnormality derivation!'
   end
 
+  expression = 'der\(((?:2[0-2]|[01]?[0-9]|X|Y)[\w.]*;(?:(?:2[0-2]|[01]?[0-9]|X|Y)[\w.]*))\)'
+  regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
+  matches = pathology_case_finding.genetic_abnormality_name.scan(regular_expression)
+  matches.each do |match|
+    pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: "der(#{match.first.to_s})", normalization_type: 'structural chromosomal translocation', match_token: "der(#{match.first.to_s})")
+    pathology_case_finding.save!
+    puts 'got you normalize_structural_chromosomal_abnormality translocation!'
+  end
+
   #dicentric chromosome
   expression = 'dic\(((?:2[0-2]|[01]?[0-9]|X|Y)[\w.]*;(?:(?:2[0-2]|[01]?[0-9]|X|Y)[\w.]*))\)'
   regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
   matches = pathology_case_finding.genetic_abnormality_name.scan(regular_expression)
   matches.each do |match|
-    pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: "dic(#{match.first.to_s})", normalization_type: 'structural chromosomal translocation', match_token: "t(#{match.first};#{match.last})")
+    pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: "dic(#{match.first.to_s})", normalization_type: 'structural chromosomal translocation', match_token: "dic(#{match.first.to_s})")
     pathology_case_finding.save!
     puts 'got you normalize_structural_chromosomal_abnormality dicentric chromosome!'
   end
@@ -440,7 +500,7 @@ def normalize_structural_chromosomal_abnormality(pathology_case_finding)
   regular_expression = Regexp.new(expression, Regexp::IGNORECASE)
   matches = pathology_case_finding.genetic_abnormality_name.scan(regular_expression)
   matches.each do |match|
-    pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: "t(#{match.first.to_s})", normalization_type: 'structural chromosomal translocation', match_token: "t(#{match.first};#{match.last})")
+    pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: "t(#{match.first.to_s})", normalization_type: 'structural chromosomal translocation', match_token: "t(#{match.first.to_s})")
     pathology_case_finding.save!
     puts 'got you normalize_structural_chromosomal_abnormality translocation!'
   end
