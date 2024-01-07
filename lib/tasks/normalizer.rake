@@ -183,6 +183,8 @@ namespace :normalizer do
         end
       end
     end
+
+    PathologyCaseFinding.where(genetic_abnormality_name: ['...', ':', ': :', ':---', ':---:', 'NEGATIVE', 'POSITIVE', 'POSITIVE*']).destro_all
   end
 
   # bundle exec rake normalizer:compare_gold_standard
