@@ -47,6 +47,7 @@ namespace :normalizer do
     load_pathology_cases_and_findings(files, west_mrn: args[:west_mrn])
   end
 
+  # export ACCESSION_NBR_FORMATTED=''
   # bundle exec rake normalizer:normalize
   desc "Normalize"
   task :normalize, [:west_mrn] => :environment do |t, args|
@@ -109,38 +110,79 @@ namespace :normalizer do
       end
     end
 
-    PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.find(pathology_case_finding_normalization.pathology_case_finding_id) }.each do |pathology_case_finding|
+    PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.where("id = ? AND genetic_abnormality_name like '%with concurrent%'", pathology_case_finding_normalization.pathology_case_finding_id).first }.compact.each do |pathology_case_finding|
       pathology_case_finding.pathology_case_finding_normalizations.where("gene_1 IS NOT NULL AND normalization_type !='fusion'").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
-        # puts 'pathology_case_finding_id'
-        # puts pathology_case_finding_normalizations.first.pathology_case_finding.id
-        # puts 'genetic_abnormality_name'
-        # puts pathology_case_finding_normalizations.first.pathology_case_finding.genetic_abnormality_name
-        #
-        # puts 'gene'
-        # puts gene
-        if pathology_case_finding_normalizations.size > 1
-          shortest_match_token = pathology_case_finding_normalizations.map { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length }.min
-          pathology_case_finding_normalizations.select { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length != shortest_match_token }.each do |pathology_case_finding_normalization|
+        before, after = pathology_case_finding.genetic_abnormality_name.split('with concurrent')
+        puts 'genetic_abnormality_name'
+        puts pathology_case_finding.genetic_abnormality_name
+        puts 'before'
+        puts before
+        puts 'after'
+        puts after
+        puts 'gene'
+        puts gene
+        puts 'normalizations'
+        pathology_case_finding_normalizations.each do |pathology_case_finding_normalization|
+          puts 'normalization_name'
+          puts pathology_case_finding_normalization.normalization_name
+          puts 'normalization_type'
+          puts pathology_case_finding_normalization.normalization_type
+          puts 'match_token'
+          puts pathology_case_finding_normalization.match_token
+
+          found = [before, after].detect { |match_token| match_token.include?(pathology_case_finding_normalization.match_token) }
+          if !found
+            puts 'kill me!'
             pathology_case_finding_normalization.destroy!
+          else
+            puts 'let me live!'
           end
-        else
-          # puts 'only one per gene'
         end
       end
     end
 
-    # PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition')").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.find(pathology_case_finding_normalization.pathology_case_finding_id) }.each do |pathology_case_finding|
-    #   pathology_case_finding.pathology_case_finding_normalizations.where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition')").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
-    #     if pathology_case_finding_normalizations.size > 1
-    #       longest_match_token = pathology_case_finding_normalizations.map { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length }.max
-    #       pathology_case_finding_normalizations.select { |pathology_case_finding_normalization| pathology_case_finding_normalization.match_token.length < longest_match_token }.each do |pathology_case_finding_normalization|
-    #         pathology_case_finding_normalization.destroy!
-    #       end
-    #     else
-    #       puts 'only one per structural chromosmal'
-    #     end
-    #   end
-    # end
+    # PathologyCaseFindingNormalization.select('pathology_case_finding_id, gene_1, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id, :gene_1).having('count(*) > 1').each do |target|
+  #     pathology_case_finding_normalizations = PathologyCaseFindingNormalization.where(pathology_case_finding_id: target.pathology_case_finding_id, gene_1: target.gene_1)
+  #     pathology_case_finding_normalizations.each do |pcfn|
+  #       puts 'genetic_abnormaltiy_name'
+  #       puts  target.pathology_case_finding.genetic_abnormality_name
+  #       puts 'normalization_name'
+  #       puts pcfn.normalization_name
+  #       puts 'match_token'
+  #       puts pcfn.match_token
+  #
+  #       found = pathology_case_finding_normalizations.select{ |other_pfcn| pcfn.id != other_pfcn.id && pcfn.match_token.include?(other_pfcn.match_token) }
+  #       found.each do |f|
+  #         puts 'found guys'
+  #         puts 'normalization_name'
+  #         puts f.normalization_name
+  #         puts 'match_token'
+  #         puts f.match_token
+  #       end
+  #
+  #       if found.any?
+  #         puts 'kill me!'
+  #       else
+  #         puts 'let me live'
+  #       end
+  #     end
+  #   end
+
+    PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition', 'structural chromosomal deletion')").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.find(pathology_case_finding_normalization.pathology_case_finding_id) }.each do |pathology_case_finding|
+      pathology_case_finding_normalizations = pathology_case_finding.pathology_case_finding_normalizations.where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition', 'structural chromosomal deletion')")
+      pathology_case_finding_normalizations.select { |pathology_case_finding_normalization| pathology_case_finding_normalization.normalization_type == 'numerical chromosomal' }.each do |numerical_chromosomal_pathology_case_finding_normalization|
+        structural_chromosomal_pathology_case_finding_normalization = pathology_case_finding_normalizations.detect { |pathology_case_finding_normalization| ['structural chromosomal addition', 'structural chromosomal deletion'].include?(pathology_case_finding_normalization.normalization_type) && pathology_case_finding_normalization.match_token.include?(numerical_chromosomal_pathology_case_finding_normalization.match_token) }
+        if structural_chromosomal_pathology_case_finding_normalization
+          # puts "That's a bingo!"
+          # puts structural_chromosomal_pathology_case_finding_normalization.pathology_case_finding.genetic_abnormality_name
+          # puts numerical_chromosomal_pathology_case_finding_normalization.normalization_name
+          # puts numerical_chromosomal_pathology_case_finding_normalization.match_token
+          # puts structural_chromosomal_pathology_case_finding_normalization.normalization_name
+          # puts structural_chromosomal_pathology_case_finding_normalization.match_token
+          numerical_chromosomal_pathology_case_finding_normalization.destroy!
+        end
+      end
+    end
   end
 
   # bundle exec rake normalizer:compare_gold_standard
@@ -189,6 +231,19 @@ namespace :normalizer do
         values.unshift(evaluation)
         values.unshift(gold_standard_status)
         csv << values
+      end
+      gold_normalizations.each do |gold_normalization|
+        if gold_normalization['normalization_name'].present?
+          normalization = normalizations.detect { |normalization| normalization['accession_nbr_formatted'] == gold_normalization['accession_nbr_formatted'] && normalization['genetic_abnormality_name'] == gold_normalization['genetic_abnormality_name'] && normalization['normalization_name'] == gold_normalization['normalization_name'] }
+          if normalization
+            puts 'gold matched new, nothing to do'
+          else
+            values = gold_normalization.values
+            gold_standard_status = 'no match from gold standard'
+            values.unshift(gold_standard_status)
+            csv << values
+          end
+        end
       end
     end
   end
@@ -289,13 +344,14 @@ def prepare_interspersed_regex(token_1, token_2)
 end
 
 def normalize_gene_abnormality(pathology_case_finding, regular_expressions, gene_abnormality)
+  puts 'normalize_gene_abnormality'
+  puts gene_abnormality
   regular_expressions.each do |regular_expression|
     m = pathology_case_finding.genetic_abnormality_name.match(regular_expression)
     if m
-      pathology_case_finding.pathology_case_finding_normalizations.build(normalization_name: gene_abnormality[:normalization], normalization_type: gene_abnormality[:normalization_type], gene_1: gene_abnormality[:gene], match_token: m.to_s)
-      pathology_case_finding.save!
+      pathology_case_finding.pathology_case_finding_normalizations.where(normalization_name: gene_abnormality[:normalization], normalization_type: gene_abnormality[:normalization_type], gene_1: gene_abnormality[:gene], match_token: m.to_s).first_or_create
+      # pathology_case_finding.save!
       puts 'got you gene abnormality!'
-      break
     end
   end
 end
