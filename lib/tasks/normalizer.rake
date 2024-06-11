@@ -40,18 +40,33 @@ namespace :normalizer do
   task :load_pathology_cases_and_findings, [:west_mrn] => :environment do |t, args|
     puts 'you need to care'
     puts args[:west_mrn]
-    directory_path = 'lib/setup/data/AML Cytogenetic and FISH Pathology Cases/'
+    directory_path = 'lib/setup/data/normalization_method/llm/'
     files = Dir.glob(File.join(directory_path, '*.xlsx'))
     files = files.sort_by { |file| File.stat(file).mtime }
 
-    load_pathology_cases_and_findings(files, west_mrn: args[:west_mrn])
+    load_pathology_cases(files, west_mrn: args[:west_mrn], normalization_method: 'llm')
+    load_pathology_findings
+  end
+
+  # bundle exec rake normalizer:load_pathology_cases_and_findings_regular_expression
+  desc "Load pathology cases and findings regular expression"
+  task :load_pathology_cases_and_findings_regular_expression, [:west_mrn] => :environment do |t, args|
+    puts 'you need to care'
+    puts args[:west_mrn]
+    directory_path = 'lib/setup/data/normalization_method/regular_expression/'
+    files = Dir.glob(File.join(directory_path, '*.xlsx'))
+    files = files.sort_by { |file| File.stat(file).mtime }
+
+    load_pathology_cases(files, west_mrn: args[:west_mrn], normalization_method: 'regular expression')
+    load_pathology_findings_regular_expression
   end
 
   # export ACCESSION_NBR_FORMATTED=''
-  # bundle exec rake normalizer:normalize
+  # bundle exec rake normalizer:normalize["regular expression"]
   desc "Normalize"
-  task :normalize, [:west_mrn] => :environment do |t, args|
-    # PathologyCaseFindingNormalization.delete_all
+  task :normalize, [:normalization_method] => :environment do |t, args|
+    puts 'hello'
+    puts args[:normalization_method]
     accession_nbr_formatted = nil
     puts ENV['ACCESSION_NBR_FORMATTED']
     if ENV['ACCESSION_NBR_FORMATTED'].present?
@@ -68,8 +83,12 @@ namespace :normalizer do
         end
       end
     else
-      PathologyCaseFindingNormalization.delete_all
-      pathology_cases = PathologyCase.all
+      pathology_cases = PathologyCase.where(normalization_method: args[:normalization_method])
+      pathology_cases.each do |pathology_case|
+        pathology_case.pathology_case_findings.each do |pathology_case_finding|
+          pathology_case_finding.pathology_case_finding_normalizations.delete_all
+        end
+      end
     end
 
     pathology_cases.each do |pathology_case|
@@ -183,8 +202,7 @@ namespace :normalizer do
         end
       end
     end
-
-    PathologyCaseFinding.where(genetic_abnormality_name: ['...', ':', ': :', ':---', ':---:', 'NEGATIVE', 'POSITIVE', 'POSITIVE*']).destro_all
+    PathologyCaseFinding.where(genetic_abnormality_name: ['...', ':', ': :', ':---', ':---:', 'NEGATIVE', 'POSITIVE', 'POSITIVE*']).destroy_all
   end
 
   # bundle exec rake normalizer:compare_gold_standard
@@ -251,12 +269,11 @@ namespace :normalizer do
   end
 end
 
-def load_pathology_cases_and_findings(files, options= {})
+def load_pathology_cases(files, options= {})
   options = { west_mrn: nil }.merge(options)
-  PathologyCase.delete_all
-  PathologyCaseFinding.delete_all
-  PathologyCaseFindingNormalization.delete_all
+  PathologyCase.where(normalization_method: options[:normalization_method]).destroy_all
   files.each do |file|
+    puts file
     pathology_cases = Roo::Spreadsheet.open(file)
     pathology_case_map = {
        'west mrn' => 0,
@@ -285,10 +302,15 @@ def load_pathology_cases_and_findings(files, options= {})
       pathology_case.accessioned_date_key = pathology_cases.sheet(0).row(i)[pathology_case_map['accessioned date key']]
       pathology_case.section_description = pathology_cases.sheet(0).row(i)[pathology_case_map['section description']]
       pathology_case.note_text = pathology_cases.sheet(0).row(i)[pathology_case_map['note text']]
+      pathology_case.normalization_method  = options[:normalization_method]
       pathology_case.save!
     end
   end
 
+
+end
+
+def load_pathology_findings()
   directory_path = 'lib/setup/data/results/'
   results_files = Dir.glob(File.join(directory_path, '*.csv'))
   results_files = results_files.sort_by { |file| File.stat(file).mtime }
@@ -303,7 +325,7 @@ def load_pathology_cases_and_findings(files, options= {})
 
       identiifers = pathology_case_finding['Report Excerpt'].split('__')
 
-      pathology_case = PathologyCase.where(snomed_name: identiifers[0], source_system: identiifers[1], pathology_case_source_system_id: identiifers[2])
+      pathology_case = PathologyCase.where(snomed_name: identiifers[0], source_system: identiifers[1], pathology_case_source_system_id: identiifers[2], normalization_method: 'llm')
 
       if pathology_case.length == 1
         pathology_case = pathology_case.first
@@ -319,6 +341,43 @@ def load_pathology_cases_and_findings(files, options= {})
         pcf.save!
       else
         puts 'We did not find a pathology case!'
+      end
+    end
+  end
+end
+
+def load_pathology_findings_regular_expression
+  PathologyCase.where(normalization_method: 'regular expression').all.each do |pathology_case|
+    puts 'not so much'
+    puts pathology_case.note_text
+    pathology_case.note_text.split("\n").each do |line|
+      puts 'hello'
+      if !line.match?(/^\|\|.*\|\|$/)
+        status_matches = line.scan(/positive|negative/i)
+        if status_matches.any?
+          puts line
+          if status_matches.size >= 1
+            pcf = PathologyCaseFinding.new
+            pcf.pathology_case_id = pathology_case.id
+            if status_matches.size == 1
+              pcf.status = status_matches.first.to_s.upcase
+            else
+              pcf.status = 'AMBIGIOUS'
+            end
+            pcf.genetic_abnormality_name = line
+            # percentage_matches = line.scan(/\b\d+%/)
+            percentage_matches = line.scan(/(\d*\.?\d+)%/)
+            if percentage_matches.size >=1
+              if percentage_matches.size == 1
+                pcf.percentage = percentage_matches.first.first.to_s
+              else
+                pcf.percentage = percentage_matches.map { |percentage_match| percentage_match.first.to_s }.join('|')
+              end
+            end
+            pcf.matched_og_phrase = line
+            pcf.save!
+          end
+        end
       end
     end
   end

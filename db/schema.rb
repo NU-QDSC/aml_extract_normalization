@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2023_12_14_100816) do
+ActiveRecord::Schema[7.1].define(version: 2024_06_11_074811) do
   create_table "chromosomal_abnormalities", force: :cascade do |t|
     t.string "abnormality"
     t.string "abnormality_type"
@@ -132,6 +132,8 @@ ActiveRecord::Schema[7.1].define(version: 2023_12_14_100816) do
     t.string "extraction_status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "clone"
+    t.string "cell_count"
     t.index ["pathology_case_id"], name: "index_pathology_case_findings_on_pathology_case_id"
   end
 
@@ -149,6 +151,7 @@ ActiveRecord::Schema[7.1].define(version: 2023_12_14_100816) do
     t.text "note_text"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "normalization_method"
   end
 
 end
