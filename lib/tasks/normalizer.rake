@@ -293,12 +293,16 @@ def load_cytogenetic_pathology_findings_regular_expression
 
     if !inadequate
       clones = sections[0].scan(/^(\w+[^:]*):\s*(.+)$/)
-
       if clones.any?
         clones.each do |clone|
+          puts 'clone'
+          puts clone
           pcf = PathologyCaseFinding.new
           clone_name = clone[0]
+          clone[1].strip!
           cell_count = clone[1].scan(/c?\[([^\]]+)\]$/)
+          puts 'cell_count'
+          puts cell_count
           if cell_count.any?
             cell_count = cell_count.first.first
           end
@@ -332,6 +336,7 @@ def load_cytogenetic_pathology_findings_regular_expression
         clones = sections[0].split("\n")
         clones.reject!(&:empty?)
         clones.each do |clone|
+          clone.strip!
           clone_name = nil
           cell_count = clone.scan(/c?\[([^\]]+)\]$/)
           if cell_count.any?
