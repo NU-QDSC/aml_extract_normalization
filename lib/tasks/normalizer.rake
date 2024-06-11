@@ -62,149 +62,23 @@ namespace :normalizer do
   end
 
   # export ACCESSION_NBR_FORMATTED=''
-  # bundle exec rake normalizer:normalize["regular expression"]
-  desc "Normalize"
-  task :normalize, [:normalization_method] => :environment do |t, args|
-    puts 'hello'
-    puts args[:normalization_method]
-    accession_nbr_formatted = nil
-    puts ENV['ACCESSION_NBR_FORMATTED']
-    if ENV['ACCESSION_NBR_FORMATTED'].present?
-      accession_nbr_formatted = ENV['ACCESSION_NBR_FORMATTED']
-    end
-    if accession_nbr_formatted
-      pathology_cases = PathologyCase.where(accession_nbr_formatted: accession_nbr_formatted).all
-      pathology_cases.each do |pathology_case|
-        puts pathology_case.pathology_case_findings.size
-        pathology_case.pathology_case_findings.each do |pathology_case_finding|
-          pathology_case_finding.pathology_case_finding_normalizations.each do |pathology_case_finding_normalization|
-            pathology_case_finding_normalization.destroy!
-          end
-        end
-      end
-    else
-      pathology_cases = PathologyCase.where(normalization_method: args[:normalization_method])
-      pathology_cases.each do |pathology_case|
-        pathology_case.pathology_case_findings.each do |pathology_case_finding|
-          pathology_case_finding.pathology_case_finding_normalizations.delete_all
-        end
-      end
-    end
+  # bundle exec rake normalizer:load_cytogenetic_pathology_cases_and_findings_regular_expression
+  desc "Load cytogenetic pathology cases and findings regular expression"
+  task :load_cytogenetic_pathology_cases_and_findings_regular_expression, [:west_mrn] => :environment do |t, args|
+    puts 'you need to care'
+    puts args[:west_mrn]
+    directory_path = 'lib/setup/data/normalization_method/regular_expression/cytogenetics'
+    files = Dir.glob(File.join(directory_path, '*.xlsx'))
+    files = files.sort_by { |file| File.stat(file).mtime }
 
-    pathology_cases.each do |pathology_case|
-      pathology_case.pathology_case_findings.each_with_index do |pathology_case_finding, i|
-        genes = gene_list(pathology_case_finding.genetic_abnormality_name, discard_substrings: true)
-        # puts '------------------------'
-        # puts 'genetic_abnormality_name'
-        # puts pathology_case_finding.genetic_abnormality_name
-        genes.each do |gene|
-          # puts '||||||||||||||||||||'
-          # puts 'gene'
-          # puts gene
-          gene_abnormalities = []
-          gene_abnormalities << { gene: gene, normalization_type: 'gene amplification', normalization: "#{gene} amplification", pre_abnormality_tokens: ['amplification of', 'amplifications of', 'gain of', 'amplification', 'amplifications', 'gain', 'gains'], post_abnormality_tokens: ['amplification','amplifications', 'gain'] }
-          gene_abnormalities << { gene: gene, normalization_type: 'gene rearrangement', normalization: "#{gene} rearrangement", pre_abnormality_tokens: ['rearrangement of', 'rearrangements of', 'rearrangement'], post_abnormality_tokens: ['rearrangement', 'rearrangements'] }
-          gene_abnormalities << { gene: gene, normalization_type: 'gene deletion', normalization: "#{gene} deletion", pre_abnormality_tokens: ['deletion of', 'deletions of', 'loss of', 'deletion', 'deletions'], post_abnormality_tokens: ['deletion', 'deletions', 'loss', 'losses'] }
-          gene_abnormalities << { gene: gene, normalization_type: 'gene translocation', normalization: "#{gene} translocation", pre_abnormality_tokens: ['translocation of', 'translocation'], post_abnormality_tokens: ['translocation'] }
-
-          gene_abnormalities.each do |gene_abnormality|
-            regular_expressions = []
-            gene_abnormality[:pre_abnormality_tokens].each do |pre_abnormality_token|
-              regular_expressions << prepare_interspersed_regex(pre_abnormality_token, gene)
-            end
-            gene_abnormality[:post_abnormality_tokens].each do |post_abnormality_token|
-              regular_expressions << prepare_interspersed_regex(gene, post_abnormality_token)
-            end
-            normalize_gene_abnormality(pathology_case_finding, regular_expressions, gene_abnormality)
-          end
-        end
-        genes = gene_list(pathology_case_finding.genetic_abnormality_name, discard_substrings: false)
-        gene_parings = generate_gene_parings(genes)
-        gene_parings.each do |gene_paring|
-          normalize_fusion(pathology_case_finding, gene_paring)
-        end
-
-        normalize_numerical_chromosomal_abnormality(pathology_case_finding)
-        normalize_structural_chromosomal_abnormality(pathology_case_finding)
-      end
-    end
-
-    PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.where("id = ? AND genetic_abnormality_name like '%with concurrent%'", pathology_case_finding_normalization.pathology_case_finding_id).first }.compact.each do |pathology_case_finding|
-      pathology_case_finding.pathology_case_finding_normalizations.where("gene_1 IS NOT NULL AND normalization_type !='fusion'").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
-        before, after = pathology_case_finding.genetic_abnormality_name.split('with concurrent')
-        puts 'genetic_abnormality_name'
-        puts pathology_case_finding.genetic_abnormality_name
-        puts 'before'
-        puts before
-        puts 'after'
-        puts after
-        puts 'gene'
-        puts gene
-        puts 'normalizations'
-        pathology_case_finding_normalizations.each do |pathology_case_finding_normalization|
-          puts 'normalization_name'
-          puts pathology_case_finding_normalization.normalization_name
-          puts 'normalization_type'
-          puts pathology_case_finding_normalization.normalization_type
-          puts 'match_token'
-          puts pathology_case_finding_normalization.match_token
-
-          found = [before, after].detect { |match_token| match_token.include?(pathology_case_finding_normalization.match_token) }
-          if !found
-            puts 'kill me!'
-            pathology_case_finding_normalization.destroy!
-          else
-            puts 'let me live!'
-          end
-        end
-      end
-    end
-
-    # PathologyCaseFindingNormalization.select('pathology_case_finding_id, gene_1, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id, :gene_1).having('count(*) > 1').each do |target|
-  #     pathology_case_finding_normalizations = PathologyCaseFindingNormalization.where(pathology_case_finding_id: target.pathology_case_finding_id, gene_1: target.gene_1)
-  #     pathology_case_finding_normalizations.each do |pcfn|
-  #       puts 'genetic_abnormaltiy_name'
-  #       puts  target.pathology_case_finding.genetic_abnormality_name
-  #       puts 'normalization_name'
-  #       puts pcfn.normalization_name
-  #       puts 'match_token'
-  #       puts pcfn.match_token
-  #
-  #       found = pathology_case_finding_normalizations.select{ |other_pfcn| pcfn.id != other_pfcn.id && pcfn.match_token.include?(other_pfcn.match_token) }
-  #       found.each do |f|
-  #         puts 'found guys'
-  #         puts 'normalization_name'
-  #         puts f.normalization_name
-  #         puts 'match_token'
-  #         puts f.match_token
-  #       end
-  #
-  #       if found.any?
-  #         puts 'kill me!'
-  #       else
-  #         puts 'let me live'
-  #       end
-  #     end
-  #   end
-
-    PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition', 'structural chromosomal deletion')").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.find(pathology_case_finding_normalization.pathology_case_finding_id) }.each do |pathology_case_finding|
-      pathology_case_finding_normalizations = pathology_case_finding.pathology_case_finding_normalizations.where("normalization_type IN('numerical chromosomal', 'structural chromosomal addition', 'structural chromosomal deletion')")
-      pathology_case_finding_normalizations.select { |pathology_case_finding_normalization| pathology_case_finding_normalization.normalization_type == 'numerical chromosomal' }.each do |numerical_chromosomal_pathology_case_finding_normalization|
-        structural_chromosomal_pathology_case_finding_normalization = pathology_case_finding_normalizations.detect { |pathology_case_finding_normalization| ['structural chromosomal addition', 'structural chromosomal deletion'].include?(pathology_case_finding_normalization.normalization_type) && pathology_case_finding_normalization.match_token.include?(numerical_chromosomal_pathology_case_finding_normalization.match_token) }
-        if structural_chromosomal_pathology_case_finding_normalization
-          # puts "That's a bingo!"
-          # puts structural_chromosomal_pathology_case_finding_normalization.pathology_case_finding.genetic_abnormality_name
-          # puts numerical_chromosomal_pathology_case_finding_normalization.normalization_name
-          # puts numerical_chromosomal_pathology_case_finding_normalization.match_token
-          # puts structural_chromosomal_pathology_case_finding_normalization.normalization_name
-          # puts structural_chromosomal_pathology_case_finding_normalization.match_token
-          numerical_chromosomal_pathology_case_finding_normalization.destroy!
-        end
-      end
-    end
-    PathologyCaseFinding.where(genetic_abnormality_name: ['...', ':', ': :', ':---', ':---:', 'NEGATIVE', 'POSITIVE', 'POSITIVE*']).destroy_all
+    load_pathology_cases(files, west_mrn: args[:west_mrn], normalization_method: 'regular expression')
+    load_cytogenetic_pathology_findings_regular_expression
   end
 
+  # export ACCESSION_NBR_FORMATTED=''
+  # bundle exec rake normalizer:normalize["regular expression"]
+  desc "Normalize"
+  task :normc
   # bundle exec rake normalizer:compare_gold_standard
   desc "Compare to gold standard"
   task(compare_gold_standard: :environment) do |t, args|
@@ -270,7 +144,13 @@ namespace :normalizer do
 end
 
 def load_pathology_cases(files, options= {})
-  options = { west_mrn: nil }.merge(options)
+  puts 'hello'
+  accession_nbr_formatted = nil
+  puts ENV['ACCESSION_NBR_FORMATTED']
+  if ENV['ACCESSION_NBR_FORMATTED'].present?
+    accession_nbr_formatted = ENV['ACCESSION_NBR_FORMATTED']
+  end
+
   PathologyCase.where(normalization_method: options[:normalization_method]).destroy_all
   files.each do |file|
     puts file
@@ -290,24 +170,24 @@ def load_pathology_cases(files, options= {})
     }
 
     for i in 2..pathology_cases.sheet(0).last_row do
-      pathology_case = PathologyCase.new
-      pathology_case.west_mrn = pathology_cases.sheet(0).row(i)[pathology_case_map['west mrn']]
-      pathology_case.source_system = pathology_cases.sheet(0).row(i)[pathology_case_map['source system']]
-      pathology_case.pathology_case_key = pathology_cases.sheet(0).row(i)[pathology_case_map['pathology case key']]
-      pathology_case.pathology_case_source_system_id = pathology_cases.sheet(0).row(i)[pathology_case_map['pathology case source system id']]
-      pathology_case.accession_nbr_formatted = pathology_cases.sheet(0).row(i)[pathology_case_map['accession nbr formatted']]
-      pathology_case.group_desc = pathology_cases.sheet(0).row(i)[pathology_case_map['group desc']]
-      pathology_case.snomed_code = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed code']]
-      pathology_case.snomed_name = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed name']]
-      pathology_case.accessioned_date_key = pathology_cases.sheet(0).row(i)[pathology_case_map['accessioned date key']]
-      pathology_case.section_description = pathology_cases.sheet(0).row(i)[pathology_case_map['section description']]
-      pathology_case.note_text = pathology_cases.sheet(0).row(i)[pathology_case_map['note text']]
-      pathology_case.normalization_method  = options[:normalization_method]
-      pathology_case.save!
+      if accession_nbr_formatted.nil? || accession_nbr_formatted == pathology_cases.sheet(0).row(i)[pathology_case_map['accession nbr formatted']]
+        pathology_case = PathologyCase.new
+        pathology_case.west_mrn = pathology_cases.sheet(0).row(i)[pathology_case_map['west mrn']]
+        pathology_case.source_system = pathology_cases.sheet(0).row(i)[pathology_case_map['source system']]
+        pathology_case.pathology_case_key = pathology_cases.sheet(0).row(i)[pathology_case_map['pathology case key']]
+        pathology_case.pathology_case_source_system_id = pathology_cases.sheet(0).row(i)[pathology_case_map['pathology case source system id']]
+        pathology_case.accession_nbr_formatted = pathology_cases.sheet(0).row(i)[pathology_case_map['accession nbr formatted']]
+        pathology_case.group_desc = pathology_cases.sheet(0).row(i)[pathology_case_map['group desc']]
+        pathology_case.snomed_code = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed code']]
+        pathology_case.snomed_name = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed name']]
+        pathology_case.accessioned_date_key = pathology_cases.sheet(0).row(i)[pathology_case_map['accessioned date key']]
+        pathology_case.section_description = pathology_cases.sheet(0).row(i)[pathology_case_map['section description']]
+        pathology_case.note_text = pathology_cases.sheet(0).row(i)[pathology_case_map['note text']]
+        pathology_case.normalization_method  = options[:normalization_method]
+        pathology_case.save!
+      end
     end
   end
-
-
 end
 
 def load_pathology_findings()
@@ -375,6 +255,109 @@ def load_pathology_findings_regular_expression
               end
             end
             pcf.matched_og_phrase = line
+            pcf.save!
+          end
+        end
+      end
+    end
+  end
+end
+
+def load_cytogenetic_pathology_findings_regular_expression
+  puts 'hello'
+  accession_nbr_formatted = nil
+  puts ENV['ACCESSION_NBR_FORMATTED']
+  if ENV['ACCESSION_NBR_FORMATTED'].present?
+    accession_nbr_formatted = ENV['ACCESSION_NBR_FORMATTED']
+  end
+
+  if accession_nbr_formatted
+    pathology_cases = PathologyCase.where(normalization_method: 'regular expression').all
+  else
+    pathology_cases = PathologyCase.where(normalization_method: 'regular expression', accession_nbr_formatted: accession_nbr_formatted).all
+  end
+
+  pathology_cases.all.each do |pathology_case|
+    puts 'not so much'
+    puts pathology_case.note_text
+    # accession_nbr_formatted = nil
+    # pathology_case = PathologyCase.where(normalization_method: 'regular expression', accession_nbr_formatted: accession_nbr_formatted).first
+
+    sections = pathology_case.note_text.split(/\|\|.*?\|\|/)
+    sections.reject!(&:empty?)
+    inadequate_triggers = ['See comments', 'See Interpretation']
+    inadequate = inadequate_triggers.any? { |inadequate_trigger| sections[0].include?(inadequate_trigger) }
+
+    puts 'are we inadequate?'
+    puts inadequate
+
+    if !inadequate
+      clones = sections[0].scan(/^(\w+[^:]*):\s*(.+)$/)
+
+      if clones.any?
+        clones.each do |clone|
+          pcf = PathologyCaseFinding.new
+          clone_name = clone[0]
+          cell_count = clone[1].scan(/c?\[([^\]]+)\]$/)
+          if cell_count.any?
+            cell_count = cell_count.first.first
+          end
+          clone[1] = clone[1].sub(/c?\[.*\]$/, '')
+          tokens = clone[1].split(',')
+
+          chormosome_count = tokens.shift
+          sex = tokens.shift
+          if tokens.any?
+            tokens.each do |token|
+              pcf = PathologyCaseFinding.new
+              pcf.pathology_case_id = pathology_case.id
+              pcf.clone_name = clone_name
+              pcf.cell_count = cell_count
+              pcf.chormosome_count = chormosome_count
+              pcf.sex = sex
+              pcf.genetic_abnormality_name = token
+              pcf.save!
+            end
+          else
+            pcf = PathologyCaseFinding.new
+            pcf.pathology_case_id = pathology_case.id
+            pcf.clone_name = clone_name
+            pcf.cell_count = cell_count
+            pcf.chormosome_count = chormosome_count
+            pcf.sex = sex
+            pcf.save!
+          end
+        end
+      else
+        clones = sections[0].split("\n")
+        clones.reject!(&:empty?)
+        clones.each do |clone|
+          clone_name = nil
+          cell_count = clone.scan(/c?\[([^\]]+)\]$/)
+          if cell_count.any?
+            cell_count = cell_count.first.first
+          end
+          tokens = clone.sub(/c?\[.*\]$/, '').split(',')
+          chormosome_count = tokens.shift
+          sex = tokens.shift
+          if tokens.any?
+            tokens.each do |token|
+              pcf = PathologyCaseFinding.new
+              pcf.pathology_case_id = pathology_case.id
+              pcf.clone_name = token
+              pcf.cell_count = cell_count
+              pcf.chormosome_count = chormosome_count
+              pcf.sex = sex
+              pcf.genetic_abnormality_name = token
+              pcf.save!
+            end
+          else
+            pcf = PathologyCaseFinding.new
+            pcf.pathology_case_id = pathology_case.id
+            pcf.clone_name = clone
+            pcf.cell_count = cell_count
+            pcf.chormosome_count = chormosome_count
+            pcf.sex = sex
             pcf.save!
           end
         end

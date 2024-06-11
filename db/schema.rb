@@ -132,8 +132,10 @@ ActiveRecord::Schema[7.1].define(version: 2024_06_11_074811) do
     t.string "extraction_status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "clone"
+    t.string "clone_name"
     t.string "cell_count"
+    t.string "chormosome_count"
+    t.string "sex"
     t.index ["pathology_case_id"], name: "index_pathology_case_findings_on_pathology_case_id"
   end
 
