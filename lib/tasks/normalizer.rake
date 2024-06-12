@@ -292,25 +292,26 @@ def load_cytogenetic_pathology_findings_regular_expression
     puts inadequate
 
     if !inadequate
-      clones = sections[0].scan(/^(\w+[^:]*):\s*(.+)$/)
+      # clones = sections[0].scan(/^(\w+[^:]*):\s*(.+)$/)
+      clones = sections[0].scan(/^(\S.*?):\s*(.+?)(?=^\S.*?:|\z)/m)
       if clones.any?
         clones.each do |clone|
-          puts 'clone'
+          puts 'have a clone'
           puts clone
           pcf = PathologyCaseFinding.new
-          clone_name = clone[0]
+          clone_name = clone[0].strip
           clone[1].strip!
           cell_count = clone[1].scan(/c?\[([^\]]+)\]$/)
           puts 'cell_count'
           puts cell_count
           if cell_count.any?
-            cell_count = cell_count.first.first
+            cell_count = cell_count.first.first.strip
           end
           clone[1] = clone[1].sub(/c?\[.*\]$/, '')
           tokens = clone[1].split(',')
 
-          chormosome_count = tokens.shift
-          sex = tokens.shift
+          chormosome_count = tokens.shift.strip
+          sex = tokens.shift.strip
           if tokens.any?
             tokens.each do |token|
               pcf = PathologyCaseFinding.new
@@ -319,7 +320,7 @@ def load_cytogenetic_pathology_findings_regular_expression
               pcf.cell_count = cell_count
               pcf.chormosome_count = chormosome_count
               pcf.sex = sex
-              pcf.genetic_abnormality_name = token
+              pcf.genetic_abnormality_name = token.strip
               pcf.save!
             end
           else
@@ -338,7 +339,7 @@ def load_cytogenetic_pathology_findings_regular_expression
         clones.each do |clone|
           clone.strip!
           clone_name = nil
-          cell_count = clone.scan(/c?\[([^\]]+)\]$/)
+          cell_count = clone.scan(/c?\[([^\]]+)\]$/m)
           if cell_count.any?
             cell_count = cell_count.first.first
           end
