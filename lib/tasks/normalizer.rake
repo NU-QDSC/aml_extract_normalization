@@ -77,8 +77,105 @@ namespace :normalizer do
 
   # export ACCESSION_NBR_FORMATTED=''
   # bundle exec rake normalizer:normalize["regular expression"]
+
   desc "Normalize"
-  task :normc
+  task :normalize, [:normalization_method] => :environment do |t, args|
+    puts 'hello'
+    puts args[:normalization_method]
+    accession_nbr_formatted = nil
+    puts ENV['ACCESSION_NBR_FORMATTED']
+    if ENV['ACCESSION_NBR_FORMATTED'].present?
+      accession_nbr_formatted = ENV['ACCESSION_NBR_FORMATTED']
+    end
+    if accession_nbr_formatted
+      pathology_cases = PathologyCase.where(accession_nbr_formatted: accession_nbr_formatted).all
+      pathology_cases.each do |pathology_case|
+        puts pathology_case.pathology_case_findings.size
+        pathology_case.pathology_case_findings.each do |pathology_case_finding|
+          pathology_case_finding.pathology_case_finding_normalizations.each do |pathology_case_finding_normalization|
+            pathology_case_finding_normalization.destroy!
+          end
+        end
+      end
+    else
+      pathology_cases = PathologyCase.where(normalization_method: args[:normalization_method])
+      pathology_cases.each do |pathology_case|
+        pathology_case.pathology_case_findings.each do |pathology_case_finding|
+          pathology_case_finding.pathology_case_finding_normalizations.delete_all
+        end
+      end
+    end
+
+    pathology_cases.each do |pathology_case|
+      pathology_case.pathology_case_findings.each_with_index do |pathology_case_finding, i|
+        genes = gene_list(pathology_case_finding.genetic_abnormality_name, discard_substrings: true)
+        # puts '------------------------'
+        # puts 'genetic_abnormality_name'
+        # puts pathology_case_finding.genetic_abnormality_name
+        genes.each do |gene|
+          # puts '||||||||||||||||||||'
+          # puts 'gene'
+          # puts gene
+          gene_abnormalities = []
+          gene_abnormalities << { gene: gene, normalization_type: 'gene amplification', normalization: "#{gene} amplification", pre_abnormality_tokens: ['amplification of', 'amplifications of', 'gain of', 'amplification', 'amplifications', 'gain', 'gains'], post_abnormality_tokens: ['amplification','amplifications', 'gain'] }
+          gene_abnormalities << { gene: gene, normalization_type: 'gene rearrangement', normalization: "#{gene} rearrangement", pre_abnormality_tokens: ['rearrangement of', 'rearrangements of', 'rearrangement'], post_abnormality_tokens: ['rearrangement', 'rearrangements'] }
+          gene_abnormalities << { gene: gene, normalization_type: 'gene deletion', normalization: "#{gene} deletion", pre_abnormality_tokens: ['deletion of', 'deletions of', 'loss of', 'deletion', 'deletions'], post_abnormality_tokens: ['deletion', 'deletions', 'loss', 'losses'] }
+          gene_abnormalities << { gene: gene, normalization_type: 'gene translocation', normalization: "#{gene} translocation", pre_abnormality_tokens: ['translocation of', 'translocation'], post_abnormality_tokens: ['translocation'] }
+
+          gene_abnormalities.each do |gene_abnormality|
+            regular_expressions = []
+            gene_abnormality[:pre_abnormality_tokens].each do |pre_abnormality_token|
+              regular_expressions << prepare_interspersed_regex(pre_abnormality_token, gene)
+            end
+            gene_abnormality[:post_abnormality_tokens].each do |post_abnormality_token|
+              regular_expressions << prepare_interspersed_regex(gene, post_abnormality_token)
+            end
+            normalize_gene_abnormality(pathology_case_finding, regular_expressions, gene_abnormality)
+          end
+        end
+        genes = gene_list(pathology_case_finding.genetic_abnormality_name, discard_substrings: false)
+        gene_parings = generate_gene_parings(genes)
+        gene_parings.each do |gene_paring|
+          normalize_fusion(pathology_case_finding, gene_paring)
+        end
+
+        normalize_numerical_chromosomal_abnormality(pathology_case_finding)
+        normalize_structural_chromosomal_abnormality(pathology_case_finding)
+      end
+    end
+
+    PathologyCaseFindingNormalization.select('pathology_case_finding_id, count(*) AS normalization_count').where("gene_1 IS NOT NULL AND normalization_type != 'fusion'").group(:pathology_case_finding_id).having('count(*) > 1').map { |pathology_case_finding_normalization| PathologyCaseFinding.where("id = ? AND genetic_abnormality_name like '%with concurrent%'", pathology_case_finding_normalization.pathology_case_finding_id).first }.compact.each do |pathology_case_finding|
+      pathology_case_finding.pathology_case_finding_normalizations.where("gene_1 IS NOT NULL AND normalization_type !='fusion'").group_by { |pathology_case_finding_normalization| pathology_case_finding_normalization.gene_1 }.each do |gene, pathology_case_finding_normalizations|
+        before, after = pathology_case_finding.genetic_abnormality_name.split('with concurrent')
+        puts 'genetic_abnormality_name'
+        puts pathology_case_finding.genetic_abnormality_name
+        puts 'before'
+        puts before
+        puts 'after'
+        puts after
+        puts 'gene'
+        puts gene
+        puts 'normalizations'
+        pathology_case_finding_normalizations.each do |pathology_case_finding_normalization|
+          puts 'normalization_name'
+          puts pathology_case_finding_normalization.normalization_name
+          puts 'normalization_type'
+          puts pathology_case_finding_normalization.normalization_type
+          puts 'match_token'
+          puts pathology_case_finding_normalization.match_token
+
+          found = [before, after].detect { |match_token| match_token.include?(pathology_case_finding_normalization.match_token) }
+          if !found
+            puts 'kill me!'
+            pathology_case_finding_normalization.destroy!
+          else
+            puts 'let me live!'
+          end
+        end
+      end
+    end
+  end
+
   # bundle exec rake normalizer:compare_gold_standard
   desc "Compare to gold standard"
   task(compare_gold_standard: :environment) do |t, args|
@@ -272,27 +369,23 @@ def load_cytogenetic_pathology_findings_regular_expression
   end
 
   if accession_nbr_formatted
-    pathology_cases = PathologyCase.where(normalization_method: 'regular expression').all
-  else
     pathology_cases = PathologyCase.where(normalization_method: 'regular expression', accession_nbr_formatted: accession_nbr_formatted).all
+  else
+    pathology_cases = PathologyCase.where(normalization_method: 'regular expression').all
   end
 
   pathology_cases.all.each do |pathology_case|
     puts 'not so much'
     puts pathology_case.note_text
-    # accession_nbr_formatted = nil
-    # pathology_case = PathologyCase.where(normalization_method: 'regular expression', accession_nbr_formatted: accession_nbr_formatted).first
-
     sections = pathology_case.note_text.split(/\|\|.*?\|\|/)
     sections.reject!(&:empty?)
-    inadequate_triggers = ['See comments', 'See Interpretation']
-    inadequate = inadequate_triggers.any? { |inadequate_trigger| sections[0].include?(inadequate_trigger) }
+    inadequate_triggers = ['see comments', 'see interpretation']
+    inadequate = inadequate_triggers.any? { |inadequate_trigger| sections[0].downcase.include?(inadequate_trigger) }
 
     puts 'are we inadequate?'
     puts inadequate
 
     if !inadequate
-      # clones = sections[0].scan(/^(\w+[^:]*):\s*(.+)$/)
       clones = sections[0].scan(/^(\S.*?):\s*(.+?)(?=^\S.*?:|\z)/m)
       if clones.any?
         clones.each do |clone|
@@ -301,36 +394,96 @@ def load_cytogenetic_pathology_findings_regular_expression
           pcf = PathologyCaseFinding.new
           clone_name = clone[0].strip
           clone[1].strip!
-          cell_count = clone[1].scan(/c?\[([^\]]+)\]$/)
-          puts 'cell_count'
-          puts cell_count
-          if cell_count.any?
-            cell_count = cell_count.first.first.strip
-          end
-          clone[1] = clone[1].sub(/c?\[.*\]$/, '')
-          tokens = clone[1].split(',')
+          subclones = clone[1].split('/')
 
-          chormosome_count = tokens.shift.strip
-          sex = tokens.shift.strip
-          if tokens.any?
-            tokens.each do |token|
+          if subclones.size == 1
+            cell_count = clone[1].scan(/c?\[([^\]]+)\]$/)
+            puts 'cell_count'
+            puts cell_count
+            if cell_count.any?
+              cell_count = cell_count.first.first.strip.gsub('cp','')
+            end
+            clone[1] = clone[1].sub(/c?\[.*\]$/, '')
+            tokens = clone[1].split(',')
+
+            chormosome_count = tokens.shift.strip
+            sex = tokens.shift.strip
+            if tokens.any?
+              tokens.each do |token|
+                pcf = PathologyCaseFinding.new
+                pcf.pathology_case_id = pathology_case.id
+                pcf.clone_name = clone_name
+                pcf.cell_count = cell_count
+                pcf.chormosome_count = chormosome_count
+                pcf.sex = sex
+                pcf.genetic_abnormality_name = token.strip
+                pcf.save!
+              end
+            else
               pcf = PathologyCaseFinding.new
               pcf.pathology_case_id = pathology_case.id
               pcf.clone_name = clone_name
               pcf.cell_count = cell_count
               pcf.chormosome_count = chormosome_count
               pcf.sex = sex
-              pcf.genetic_abnormality_name = token.strip
               pcf.save!
             end
           else
-            pcf = PathologyCaseFinding.new
-            pcf.pathology_case_id = pathology_case.id
-            pcf.clone_name = clone_name
-            pcf.cell_count = cell_count
-            pcf.chormosome_count = chormosome_count
-            pcf.sex = sex
-            pcf.save!
+            previous_sex = []
+            previous_tokens =[]
+            subclones.each_with_index do |subclone, i|
+              puts 'we have a subclone'
+              puts subclone
+
+              cell_count = subclone.scan(/c?\[([^\]]+)\]$/)
+              puts 'cell_count'
+              puts cell_count
+              if cell_count.any?
+                cell_count = cell_count.first.first.strip.gsub('cp', '')
+              end
+              subclone = subclone.sub(/c?\[.*\]$/, '')
+              tokens = subclone.split(',').compact
+              if tokens.any?
+                chormosome_count = tokens.shift.try(:strip)
+                sex = tokens.shift.try(:strip)
+                if sex == 'idem'
+                  sex = previous_sex
+                  tokens.concat(previous_tokens)
+                else
+                  previous_sex = sex
+                  previous_tokens = tokens
+                end
+              end
+              puts 'what am i'
+              puts i
+              if i > 0
+                subclone = true
+              else
+                subclone = false
+              end
+              if tokens.any?
+                tokens.each do |token|
+                  pcf = PathologyCaseFinding.new
+                  pcf.pathology_case_id = pathology_case.id
+                  pcf.clone_name = clone_name
+                  pcf.cell_count = cell_count
+                  pcf.chormosome_count = chormosome_count
+                  pcf.sex = sex
+                  pcf.genetic_abnormality_name = token.strip
+                  pcf.subclone = subclone
+                  pcf.save!
+                end
+              else
+                pcf = PathologyCaseFinding.new
+                pcf.pathology_case_id = pathology_case.id
+                pcf.clone_name = clone_name
+                pcf.cell_count = cell_count
+                pcf.chormosome_count = chormosome_count
+                pcf.sex = sex
+                pcf.subclone = subclone
+                pcf.save!
+              end
+            end
           end
         end
       else
@@ -341,7 +494,7 @@ def load_cytogenetic_pathology_findings_regular_expression
           clone_name = nil
           cell_count = clone.scan(/c?\[([^\]]+)\]$/m)
           if cell_count.any?
-            cell_count = cell_count.first.first
+            cell_count = cell_count.first.first.gsub('cp','')
           end
           tokens = clone.sub(/c?\[.*\]$/, '').split(',')
           chormosome_count = tokens.shift
@@ -355,6 +508,7 @@ def load_cytogenetic_pathology_findings_regular_expression
               pcf.chormosome_count = chormosome_count
               pcf.sex = sex
               pcf.genetic_abnormality_name = token
+              pcf.subclone = false
               pcf.save!
             end
           else
@@ -364,6 +518,7 @@ def load_cytogenetic_pathology_findings_regular_expression
             pcf.cell_count = cell_count
             pcf.chormosome_count = chormosome_count
             pcf.sex = sex
+            pcf.subclone = false
             pcf.save!
           end
         end

@@ -71,21 +71,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_06_11_074811) do
     t.index ["gene_abnormality_id"], name: "index_gene_abnormality_synonyms_on_gene_abnormality_id"
   end
 
-  create_table "gene_abnormality_type_synonyms", force: :cascade do |t|
-    t.integer "gene_abnormality_type_id"
-    t.string "name"
-    t.string "position"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["gene_abnormality_type_id"], name: "idx_on_gene_abnormality_type_id_806aafb496"
-  end
-
-  create_table "gene_abnormality_types", force: :cascade do |t|
-    t.string "name"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
   create_table "gene_synonyms", force: :cascade do |t|
     t.integer "gene_id"
     t.string "synonym_name"
@@ -124,7 +109,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_06_11_074811) do
   create_table "pathology_case_findings", force: :cascade do |t|
     t.integer "pathology_case_id"
     t.string "genetic_abnormality_name"
-    t.string "genetic_abnormality_name_normalized"
     t.string "status"
     t.string "percentage"
     t.text "matched_og_phrase"
@@ -133,6 +117,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_06_11_074811) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "clone_name"
+    t.boolean "subclone"
     t.string "cell_count"
     t.string "chormosome_count"
     t.string "sex"
