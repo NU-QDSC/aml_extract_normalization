@@ -386,7 +386,11 @@ def load_cytogenetic_pathology_findings_regular_expression
     puts inadequate
 
     if !inadequate
-      clones = sections[0].scan(/^(\S.*?):\s*(.+?)(?=^\S.*?:|\z)/m)
+      karyotypes = sections[0].gsub(/^\s+|\s+$/, '')
+      clones = karyotypes.scan(/^(.*?):\s*(.*(?:\n(?!.*:).*)*)/)
+      puts 'how many clones?'
+      puts clones.size
+
       if clones.any?
         clones.each do |clone|
           puts 'have a clone'
@@ -397,13 +401,13 @@ def load_cytogenetic_pathology_findings_regular_expression
           subclones = clone[1].split('/')
 
           if subclones.size == 1
-            cell_count = clone[1].scan(/c?\[([^\]]+)\]$/)
+            cell_count = clone[1].scan(/(?<!in)c?\[([^\]]+)\]$/m)
             puts 'cell_count'
             puts cell_count
             if cell_count.any?
               cell_count = cell_count.first.first.strip.gsub('cp','')
             end
-            clone[1] = clone[1].sub(/c?\[.*\]$/, '')
+            clone[1] = clone[1].sub(/(?<!in)c?\[.*\]$/, '')
             tokens = clone[1].split(',')
 
             chormosome_count = tokens.shift.strip
@@ -434,14 +438,13 @@ def load_cytogenetic_pathology_findings_regular_expression
             subclones.each_with_index do |subclone, i|
               puts 'we have a subclone'
               puts subclone
-
-              cell_count = subclone.scan(/c?\[([^\]]+)\]$/)
+              cell_count = subclone.scan(/(?<!in)c?\[([^\]]+)\]$/m)
               puts 'cell_count'
               puts cell_count
               if cell_count.any?
                 cell_count = cell_count.first.first.strip.gsub('cp', '')
               end
-              subclone = subclone.sub(/c?\[.*\]$/, '')
+              subclone = subclone.sub(/(?<!in)c?\[.*\]$/, '')
               tokens = subclone.split(',').compact
               if tokens.any?
                 chormosome_count = tokens.shift.try(:strip)
@@ -492,11 +495,12 @@ def load_cytogenetic_pathology_findings_regular_expression
         clones.each do |clone|
           clone.strip!
           clone_name = nil
-          cell_count = clone.scan(/c?\[([^\]]+)\]$/m)
+          cell_count = clone.scan(/(?<!in)c?\[([^\]]+)\]$/m)
+
           if cell_count.any?
             cell_count = cell_count.first.first.gsub('cp','')
           end
-          tokens = clone.sub(/c?\[.*\]$/, '').split(',')
+          tokens = clone.sub(/(?<!in)c?\[.*\]$/, '').split(',')
           chormosome_count = tokens.shift
           sex = tokens.shift
           if tokens.any?
