@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_06_11_074811) do
+ActiveRecord::Schema[7.1].define(version: 2024_06_19_125350) do
   create_table "chromosomal_abnormalities", force: :cascade do |t|
     t.string "abnormality"
     t.string "abnormality_type"
@@ -90,6 +90,38 @@ ActiveRecord::Schema[7.1].define(version: 2024_06_11_074811) do
     t.string "prev_symbol"
     t.string "prev_name"
     t.string "gene_group"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "ngs_pathology_case_findings", force: :cascade do |t|
+    t.integer "ngs_pathology_case_id"
+    t.string "raw_finding"
+    t.string "gene"
+    t.string "variant_name"
+    t.string "variant_type"
+    t.string "allelic_frequency"
+    t.string "transcript"
+    t.string "significance"
+    t.string "status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ngs_pathology_case_id"], name: "index_ngs_pathology_case_findings_on_ngs_pathology_case_id"
+  end
+
+  create_table "ngs_pathology_cases", force: :cascade do |t|
+    t.integer "patient_ir_id"
+    t.string "west_mrn"
+    t.string "source_system_name"
+    t.integer "source_system_id"
+    t.string "accession_nbr_formatted"
+    t.date "accessioned_datetime"
+    t.date "case_collect_date_key"
+    t.string "group_name"
+    t.string "group_desc"
+    t.string "report_description"
+    t.string "section_description"
+    t.text "note_text"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
