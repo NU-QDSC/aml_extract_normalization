@@ -954,6 +954,8 @@ def load_cytogenetic_pathology_findings_regular_expression
       puts clones.size
 
       if clones.any?
+        idem_sex = nil
+        idem_tokens = []
         clones.each do |clone|
           puts 'have a clone'
           puts clone
@@ -962,6 +964,8 @@ def load_cytogenetic_pathology_findings_regular_expression
           clone[1].strip!
           subclones = clone[1].split('/')
 
+          puts 'how many subclones?'
+          puts subclones.size
           if subclones.size == 1
             cell_count = clone[1].scan(/(?<!in)c?\[([^\]]+)\]$/m)
             puts 'cell_count'
@@ -976,9 +980,22 @@ def load_cytogenetic_pathology_findings_regular_expression
             sex = tokens.shift
             if sex
               sex.strip!
+              if sex == 'idem'
+                tokens.concat(idem_tokens)
+                sex = idem_sex
+              else
+                idem_sex = sex
+              end
+              if tokens.any?
+                tokens.each do |token|
+                  idem_tokens << token.strip
+                end
+              end
             end
             if tokens.any?
               tokens.each do |token|
+                puts 'we have a token'
+                puts token
                 pcf = PathologyCaseFinding.new
                 pcf.pathology_case_id = pathology_case.id
                 pcf.clone_name = clone_name
@@ -998,8 +1015,6 @@ def load_cytogenetic_pathology_findings_regular_expression
               pcf.save!
             end
           else
-            previous_sex = []
-            previous_tokens =[]
             subclones.each_with_index do |subclone, i|
               puts 'we have a subclone'
               puts subclone
@@ -1015,11 +1030,15 @@ def load_cytogenetic_pathology_findings_regular_expression
                 chromosome_count = tokens.shift.try(:strip)
                 sex = tokens.shift.try(:strip)
                 if sex == 'idem'
-                  sex = previous_sex
-                  tokens.concat(previous_tokens)
+                  tokens.concat(idem_tokens)
+                  sex = idem_sex
                 else
-                  previous_sex = sex
-                  previous_tokens = tokens
+                  idem_sex = sex
+                end
+                if tokens.any?
+                  tokens.each do |token|
+                    idem_tokens << token.strip
+                  end
                 end
               end
               puts 'what am i'
