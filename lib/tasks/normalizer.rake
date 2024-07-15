@@ -996,14 +996,7 @@ def load_cytogenetic_pathology_findings_regular_expression
               tokens.each do |token|
                 puts 'we have a token'
                 puts token
-                pcf = PathologyCaseFinding.new
-                pcf.pathology_case_id = pathology_case.id
-                pcf.clone_name = clone_name
-                pcf.cell_count = cell_count
-                pcf.chromosome_count = chromosome_count
-                pcf.sex = sex
-                pcf.genetic_abnormality_name = token.strip
-                pcf.save!
+                PathologyCaseFinding.where(pathology_case_id: pathology_case.id, clone_name: clone_name, cell_count: cell_count, chromosome_count: chromosome_count, sex: sex, genetic_abnormality_name: token.strip).first_or_create
               end
             else
               pcf = PathologyCaseFinding.new
@@ -1050,15 +1043,7 @@ def load_cytogenetic_pathology_findings_regular_expression
               end
               if tokens.any?
                 tokens.each do |token|
-                  pcf = PathologyCaseFinding.new
-                  pcf.pathology_case_id = pathology_case.id
-                  pcf.clone_name = clone_name
-                  pcf.cell_count = cell_count
-                  pcf.chromosome_count = chromosome_count
-                  pcf.sex = sex
-                  pcf.genetic_abnormality_name = token.strip
-                  pcf.subclone = subclone
-                  pcf.save!
+                  PathologyCaseFinding.where(pathology_case_id: pathology_case.id, clone_name: clone_name, cell_count: cell_count, chromosome_count: chromosome_count, sex: sex, genetic_abnormality_name: token.strip, subclone: subclone).first_or_create
                 end
               else
                 pcf = PathologyCaseFinding.new
@@ -1074,6 +1059,8 @@ def load_cytogenetic_pathology_findings_regular_expression
           end
         end
       else
+        idem_sex = nil
+        idem_tokens = []
         clones = sections[0].split("\n")
         clones.reject!(&:empty?)
         clones.each do |clone|
@@ -1086,18 +1073,21 @@ def load_cytogenetic_pathology_findings_regular_expression
           end
           tokens = clone.sub(/(?<!in)c?\[.*\]$/, '').split(',')
           chromosome_count = tokens.shift
-          sex = tokens.shift
+          sex = tokens.try(:shift)
+          if sex == 'idem'
+            tokens.concat(idem_tokens)
+            sex = idem_sex
+          else
+            idem_sex = sex
+          end
           if tokens.any?
             tokens.each do |token|
-              pcf = PathologyCaseFinding.new
-              pcf.pathology_case_id = pathology_case.id
-              pcf.clone_name = token
-              pcf.cell_count = cell_count
-              pcf.chromosome_count = chromosome_count
-              pcf.sex = sex
-              pcf.genetic_abnormality_name = token
-              pcf.subclone = false
-              pcf.save!
+              idem_tokens << token.strip
+            end
+          end
+          if tokens.any?
+            tokens.each do |token|
+              PathologyCaseFinding.where(pathology_case_id: pathology_case.id, clone_name: "Implicit Clone: #{token.try(:strip)}", cell_count: cell_count, chromosome_count: chromosome_count, sex: sex, genetic_abnormality_name: token.try(:strip), subclone: false).first_or_create
             end
           else
             pcf = PathologyCaseFinding.new
