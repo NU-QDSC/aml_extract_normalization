@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_06_19_125350) do
+ActiveRecord::Schema[7.1].define(version: 2024_07_21_192305) do
   create_table "chromosomal_abnormalities", force: :cascade do |t|
     t.string "abnormality"
     t.string "abnormality_type"
@@ -172,6 +172,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_06_19_125350) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "normalization_method"
+    t.date "case_collect_date_key"
   end
 
 end
