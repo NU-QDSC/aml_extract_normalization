@@ -94,6 +94,20 @@ namespace :normalizer do
   end
 
   # export ACCESSION_NBR_FORMATTED=''
+  # bundle exec rake normalizer:load_dna_methylation_array_pathology_cases_and_findings
+  desc "Load DNA methylation array pathology cases and findings"
+  task :load_dna_methylation_array_pathology_cases_and_findings, [:west_mrn] => :environment do |t, args|
+    puts 'you need to care'
+    puts args[:west_mrn]
+    directory_path = 'lib/setup/data/dna_methylation_array/'
+    files = Dir.glob(File.join(directory_path, '*.xlsx'))
+    files = files.sort_by { |file| File.stat(file).mtime }
+    normalization_method = 'dna methylation array'
+    load_dna_methylation_array_pathology_cases(files, west_mrn: args[:west_mrn], normalization_method: normalization_method)
+    load_dna_methylation_array_pathology_findings
+  end
+
+  # export ACCESSION_NBR_FORMATTED=''
   # bundle exec rake normalizer:normalize["fish regular expression"]
   desc "Normalize"
   task :normalize, [:normalization_method] => :environment do |t, args|
@@ -492,7 +506,9 @@ end
 
 def extract_between_regular_exression_and_empty_newline(text, start_marker)
   match_and_fragment = text.split(start_marker, 2)
-  extraction = match_and_fragment.last.split(/\n\s*\r?\n/, 2).first.strip
+  if match_and_fragment.size == 2
+    extraction = match_and_fragment.last.split(/\n\s*\r?\n/, 2).first.strip
+  end
 end
 
 def determine_version_ngs_pathology_case_cerner_central(note_text, classification_versions)
@@ -1600,3 +1616,391 @@ def generate_gene_parings(genes)
   end
   pairings
 end
+
+def load_dna_methylation_array_pathology_cases(files, options= {})
+  puts 'hello'
+  accession_nbr_formatted = nil
+  puts ENV['ACCESSION_NBR_FORMATTED']
+  if ENV['ACCESSION_NBR_FORMATTED'].present?
+    accession_nbr_formatted = ENV['ACCESSION_NBR_FORMATTED']
+  end
+
+  DnaMethylationArrayPathologyCase.destroy_all
+  files.each do |file|
+    puts file
+    pathology_cases = Roo::Spreadsheet.open(file)
+    pathology_case_map = {
+       'west mrn' => 0,
+       'source system' => 1,
+       'pathology case source system id' => 2,
+       'accession nbr formatted' => 3,
+       'group desc' => 4,
+       'snomed code' => 5,
+       'snomed name' => 6,
+       'accessioned date key' => 7,
+       'case collect date key' => 8,
+       'section description'   => 9,
+       'note text' => 10
+    }
+
+    for i in 2..pathology_cases.sheet(0).last_row do
+      if pathology_cases.sheet(0).row(i)[pathology_case_map['accessioned date key']] >= Date.parse('2021-11-29')
+        if accession_nbr_formatted.nil? || accession_nbr_formatted == pathology_cases.sheet(0).row(i)[pathology_case_map['accession nbr formatted']]
+          pathology_case = DnaMethylationArrayPathologyCase.new
+          pathology_case.west_mrn = pathology_cases.sheet(0).row(i)[pathology_case_map['west mrn']]
+          pathology_case.source_system = pathology_cases.sheet(0).row(i)[pathology_case_map['source system']]
+          pathology_case.pathology_case_source_system_id = pathology_cases.sheet(0).row(i)[pathology_case_map['pathology case source system id']]
+          pathology_case.accession_nbr_formatted = pathology_cases.sheet(0).row(i)[pathology_case_map['accession nbr formatted']]
+          pathology_case.group_desc = pathology_cases.sheet(0).row(i)[pathology_case_map['group desc']]
+          pathology_case.snomed_code = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed code']]
+          pathology_case.snomed_name = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed name']]
+          pathology_case.accessioned_date_key = pathology_cases.sheet(0).row(i)[pathology_case_map['accessioned date key']]
+          pathology_case.case_collect_date_key = pathology_cases.sheet(0).row(i)[pathology_case_map['case collect date key']]
+          pathology_case.section_description = pathology_cases.sheet(0).row(i)[pathology_case_map['section description']]
+          pathology_case.note_text = pathology_cases.sheet(0).row(i)[pathology_case_map['note text']]
+          pathology_case.save!
+        end
+      end
+    end
+  end
+end
+
+def load_dna_methylation_array_pathology_findings
+  DnaMethylationArrayPathologyCase.all.each do |dna_methylation_array_pathology_case|
+    puts dna_methylation_array_pathology_case.group_desc
+    puts dna_methylation_array_pathology_case.section_description
+    case dna_methylation_array_pathology_case.section_description
+
+    when 'Final Diagnosis'
+      section_text_specimen = extract_between_regular_expressions(dna_methylation_array_pathology_case.note_text, 'Specimen', 'Result')
+      if section_text_specimen
+        puts 'here is the section_text_specimen begin'
+        puts section_text_specimen
+        puts 'here is the section_text_specimen end'
+
+        match = section_text_specimen.match(/specimen\s+(.*?),/)
+
+        if match
+          associated_accession_nbr_formatted = match[1]
+          puts "Captured associated_accession_nbr_formatted: #{associated_accession_nbr_formatted}"
+          if associated_accession_nbr_formatted.size >= 5
+            dna_methylation_array_pathology_case.associated_accession_nbr_formatted = associated_accession_nbr_formatted
+          end
+          # puts associated_accession_nbr_formatted.size
+        else
+          puts "No match found"
+        end
+
+        match = section_text_specimen.match(/block\s+(.*?)\s/)
+
+        if match
+          associated_accession_nbr_formatted_block = match[1]
+          puts "Captured associated_accession_nbr_formatted_block: #{associated_accession_nbr_formatted_block}"
+          associated_accession_nbr_formatted_block = associated_accession_nbr_formatted_block.split(',').first
+          dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block = associated_accession_nbr_formatted_block
+          # puts associated_accession_nbr_formatted_block.size
+        else
+          puts "No match found"
+        end
+
+        match = section_text_specimen.match(/estimated\s+(\d+(?:\.\d+)?)%\s+tumor\s+cells/)
+        if match
+          associated_accession_nbr_formatted_block_tumor_percentage = match[1]
+          begin
+            associated_accession_nbr_formatted_block_tumor_percentage = Integer(associated_accession_nbr_formatted_block_tumor_percentage)
+            associated_accession_nbr_formatted_block_tumor_percentage = associated_accession_nbr_formatted_block_tumor_percentage/100.to_f
+          rescue Exception => e
+            associated_accession_nbr_formatted_block_tumor_percentage = nil
+          end
+
+          puts "Captured associated_accession_nbr_formatted_block_tumor_percentage: #{associated_accession_nbr_formatted_block_tumor_percentage.to_s}"
+          if associated_accession_nbr_formatted_block_tumor_percentage
+            # puts associated_accession_nbr_formatted_block_tumor_percentage.to_s.size
+            dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block_tumor_percentage = associated_accession_nbr_formatted_block_tumor_percentage
+          end
+        else
+          puts "No match found"
+        end
+        dna_methylation_array_pathology_case.save!
+      end
+
+      section_text_result = extract_between_regular_expressions(dna_methylation_array_pathology_case.note_text, 'Result', 'Comment')
+
+      if section_text_result.blank?
+        section_text_result = extract_between_regular_expressions(dna_methylation_array_pathology_case.note_text, 'Final Diagnosis', 'Comment')
+      end
+
+      puts 'here is the section_text_result begin'
+      puts section_text_result
+      puts 'here is the section_text_result end'
+
+      if section_text_result.present?
+        start_marker = Regexp.new('^Methylation Class\s+Score\s+Interpretation', Regexp::IGNORECASE)
+        subsection_text_methylation_class = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+
+        if subsection_text_methylation_class
+          puts 'begin section_text_result begin subsection_text_methylation_class'
+          puts subsection_text_methylation_class
+          puts 'end section_text_result begin subsection_text_methylation_class'
+          subsection_text_methylation_class.split("\n").each do |line|
+            line.strip!
+            puts 'got a line'
+            puts line
+            methylation_class = nil
+            score = nil
+            interpretation = nil
+            if line =~ /^no match/i
+              methylation_class = 'no match'
+              score = '0'
+              interpretation = 'no match'
+            elsif line =~ /(\d+\.\d+)\s+((?:no\s+)?match)$/i
+              puts 'take a look'
+              score = $1
+              interpretation = $2
+              methylation_class = line.sub(/\s+#{Regexp.escape(score)}\s+#{Regexp.escape(interpretation)}$/i, '').strip
+            end
+            puts 'begin methylation_class'
+            puts methylation_class
+            puts 'end methylation_class'
+
+            puts 'begin score'
+            puts score
+            puts 'end score'
+
+            puts 'begin interpretation'
+            puts interpretation
+            puts 'end interpretation'
+
+            if methylation_class.present?
+             dna_methylation_array_pathology_case_finding = DnaMethylationArrayPathologyCaseFinding.new
+             dna_methylation_array_pathology_case_finding.dna_methylation_array_pathology_case_id = dna_methylation_array_pathology_case.id
+             dna_methylation_array_pathology_case_finding.methylation_class = methylation_class.strip
+             # t.string "methylation_subclass"
+             dna_methylation_array_pathology_case_finding.score = score.strip
+             dna_methylation_array_pathology_case_finding.interpretation = interpretation.strip
+             dna_methylation_array_pathology_case_finding.save!
+            end
+          end
+        end
+
+        start_marker = Regexp.new('^Methylation Subclass Score Interpretation', Regexp::IGNORECASE)
+        subsection_text_methylation_subclass = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+
+        if subsection_text_methylation_subclass
+          puts 'begin section_text_result begin subsection_text_methylation_subclass'
+          puts subsection_text_methylation_subclass
+          puts 'end section_text_result begin subsection_text_methylation_subclass'
+
+          subsection_text_methylation_subclass.split("\n").each do |line|
+            line.strip!
+            puts 'got a line'
+            puts line
+            methylation_subclass = nil
+            score = nil
+            interpretation = nil
+            if line =~ /^no match/i
+              methylation_subclass = 'no match'
+              score = '0'
+              interpretation = 'no match'
+            elsif line =~ /(\d+\.\d+)\s+((?:no\s+)?match)$/i
+              puts 'take a look'
+              score = $1
+              interpretation = $2
+              methylation_subclass = line.sub(/\s+#{Regexp.escape(score)}\s+#{Regexp.escape(interpretation)}$/i, '').strip
+            end
+            puts 'begin methylation_subclass'
+            puts methylation_subclass
+            puts 'end methylation_subclass'
+
+            puts 'begin score'
+            puts score
+            puts 'end score'
+
+            puts 'begin interpretation'
+            puts interpretation
+            puts 'end interpretation'
+
+            if methylation_subclass.present?
+             dna_methylation_array_pathology_case_finding = DnaMethylationArrayPathologyCaseFinding.new
+             dna_methylation_array_pathology_case_finding.dna_methylation_array_pathology_case_id = dna_methylation_array_pathology_case.id
+             dna_methylation_array_pathology_case_finding.methylation_subclass = methylation_subclass.strip
+             dna_methylation_array_pathology_case_finding.score = score.strip
+             dna_methylation_array_pathology_case_finding.interpretation = interpretation.strip
+             dna_methylation_array_pathology_case_finding.save!
+            end
+          end
+        end
+      end
+    when 'Specimen'
+      puts 'here is the section_text_specimen begin'
+      puts dna_methylation_array_pathology_case.note_text
+      puts 'here is the section_text_specimen end'
+
+      match = dna_methylation_array_pathology_case.note_text.match(/formalin-fixed paraffin embedded [specimen]*\s*(.*?)\s*,*\s/i)
+
+      if match
+        associated_accession_nbr_formatted = match[1]
+        puts "Captured associated_accession_nbr_formatted: #{associated_accession_nbr_formatted}"
+        if associated_accession_nbr_formatted.size >= 5
+          dna_methylation_array_pathology_case.associated_accession_nbr_formatted = associated_accession_nbr_formatted
+        end
+        # puts associated_accession_nbr_formatted.size
+      else
+        puts "No match found"
+      end
+
+      match = dna_methylation_array_pathology_case.note_text.match(/,\s+block\s+(.*?)\s/)
+
+      if match
+        associated_accession_nbr_formatted_block = match[1]
+        associated_accession_nbr_formatted_block = associated_accession_nbr_formatted_block.split(',').first
+        puts "Captured associated_accession_nbr_formatted_block: #{associated_accession_nbr_formatted_block}"
+        dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block = associated_accession_nbr_formatted_block
+        # puts associated_accession_nbr_formatted_block.size
+      else
+        puts "No match found"
+      end
+
+      match = dna_methylation_array_pathology_case.note_text.match(/estimated\s+(\d+(?:\.\d+)?)%\s+tumor\s+cells/)
+      if match
+        associated_accession_nbr_formatted_block_tumor_percentage = match[1]
+        begin
+          associated_accession_nbr_formatted_block_tumor_percentage = Integer(associated_accession_nbr_formatted_block_tumor_percentage)
+          associated_accession_nbr_formatted_block_tumor_percentage = associated_accession_nbr_formatted_block_tumor_percentage/100.to_f
+        rescue Exception => e
+          associated_accession_nbr_formatted_block_tumor_percentage = nil
+        end
+
+        puts "Captured associated_accession_nbr_formatted_block_tumor_percentage: #{associated_accession_nbr_formatted_block_tumor_percentage.to_s}"
+        if associated_accession_nbr_formatted_block_tumor_percentage
+          # puts associated_accession_nbr_formatted_block_tumor_percentage.to_s.size
+          dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block_tumor_percentage = associated_accession_nbr_formatted_block_tumor_percentage
+        end
+      else
+        puts "No match found"
+      end
+      dna_methylation_array_pathology_case.save!
+    when 'Pathology Interpretation'
+      section_text_result = extract_between_regular_expressions(dna_methylation_array_pathology_case.note_text, 'Result', 'Comment')
+
+      puts 'here is the section_text_result begin'
+      puts section_text_result
+      puts 'here is the section_text_result end'
+
+      if section_text_result.present?
+        if section_text_result.match(/not sufficient|insufficient/i).present?
+          dna_methylation_array_pathology_case_finding = DnaMethylationArrayPathologyCaseFinding.new
+          dna_methylation_array_pathology_case_finding.dna_methylation_array_pathology_case_id = dna_methylation_array_pathology_case.id
+          dna_methylation_array_pathology_case_finding.interpretation = 'insufficient'
+          dna_methylation_array_pathology_case_finding.save!
+        else
+          start_marker =  Regexp.new('^Methylation Class\s+Score\s+Interpretation', Regexp::IGNORECASE)
+          subsection_text_methylation_class = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+          if subsection_text_methylation_class.present?
+            puts 'begin section_text_result begin subsection_text_methylation_class'
+            puts subsection_text_methylation_class
+            puts 'end section_text_result begin subsection_text_methylation_class'
+             subsection_text_methylation_class.split("\n").each do |line|
+               line.strip!
+               puts 'got a line'
+               puts line
+               methylation_class = nil
+               score = nil
+               interpretation = nil
+               if line =~ /^no match/i
+                 methylation_class = 'no match'
+                 score = '0'
+                 interpretation = 'no match'
+               elsif line =~ /(\d+\.\d+)\s+((?:no\s+)?match)$/i
+                 puts 'take a look'
+                 score = $1
+                 interpretation = $2
+                 methylation_class = line.sub(/\s+#{Regexp.escape(score)}\s+#{Regexp.escape(interpretation)}$/i, '').strip
+               end
+               puts 'begin methylation_class'
+               puts methylation_class
+               puts 'end methylation_class'
+
+               puts 'begin score'
+               puts score
+               puts 'end score'
+
+               puts 'begin interpretation'
+               puts interpretation
+               puts 'end interpretation'
+
+               if methylation_class.present?
+                 dna_methylation_array_pathology_case_finding = DnaMethylationArrayPathologyCaseFinding.new
+                 dna_methylation_array_pathology_case_finding.dna_methylation_array_pathology_case_id = dna_methylation_array_pathology_case.id
+                 dna_methylation_array_pathology_case_finding.methylation_class = methylation_class.strip
+                 # t.string "methylation_subclass"
+                 dna_methylation_array_pathology_case_finding.score = score.strip
+                 dna_methylation_array_pathology_case_finding.interpretation = interpretation.strip
+                 dna_methylation_array_pathology_case_finding.save!
+               end
+             end
+          end
+          start_marker =  Regexp.new('^Methylation Subclass Score Interpretation', Regexp::IGNORECASE)
+          subsection_text_methylation_subclass = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+          if subsection_text_methylation_subclass
+            puts 'begin section_text_result begin subsection_text_methylation_subclass'
+            puts subsection_text_methylation_subclass
+            puts 'end section_text_result begin subsection_text_methylation_subclass'
+            subsection_text_methylation_subclass.split("\n").each do |line|
+              line.strip!
+              puts 'got a line'
+              puts line
+              methylation_subclass = nil
+              score = nil
+              interpretation = nil
+              if line =~ /^no match/i
+                methylation_class = 'no match'
+                score = '0'
+                interpretation = 'no match'
+              elsif line =~ /(\d+\.\d+)\s+((?:no\s+)?match)$/i
+                puts 'take a look'
+                score = $1
+                interpretation = $2
+                methylation_subclass = line.sub(/\s+#{Regexp.escape(score)}\s+#{Regexp.escape(interpretation)}$/i, '').strip
+              end
+              puts 'begin methylation_subclass'
+              puts methylation_subclass
+              puts 'end methylation_subclass'
+
+              puts 'begin score'
+              puts score
+              puts 'end score'
+
+              puts 'begin interpretation'
+              puts interpretation
+              puts 'end interpretation'
+
+              if methylation_subclass.present?
+               dna_methylation_array_pathology_case_finding = DnaMethylationArrayPathologyCaseFinding.new
+               dna_methylation_array_pathology_case_finding.dna_methylation_array_pathology_case_id = dna_methylation_array_pathology_case.id
+               dna_methylation_array_pathology_case_finding.methylation_subclass = methylation_subclass.strip
+               dna_methylation_array_pathology_case_finding.score = score.strip
+               dna_methylation_array_pathology_case_finding.interpretation = interpretation.strip
+               dna_methylation_array_pathology_case_finding.save!
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  DnaMethylationArrayPathologyCase.where(section_description: 'Specimen').all.each do |dna_methylation_array_pathology_case|
+    if dna_methylation_array_pathology_case.associated_accession_nbr_formatted.present? || dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block.present? || dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block_tumor_percentage
+      dna_methylation_array_pathology_case_pathology_interpretation = DnaMethylationArrayPathologyCase.where(section_description: 'Pathology Interpretation', accession_nbr_formatted: dna_methylation_array_pathology_case.accession_nbr_formatted).first
+      dna_methylation_array_pathology_case_pathology_interpretation.associated_accession_nbr_formatted =  dna_methylation_array_pathology_case.associated_accession_nbr_formatted
+      dna_methylation_array_pathology_case_pathology_interpretation.associated_accession_nbr_formatted_block =  dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block
+      dna_methylation_array_pathology_case_pathology_interpretation.associated_accession_nbr_formatted_block_tumor_percentage =  dna_methylation_array_pathology_case.associated_accession_nbr_formatted_block_tumor_percentage
+      dna_methylation_array_pathology_case_pathology_interpretation.save!
+    end
+  end
+end
+
+#miss
+# methylation class IDH glioma
+# 0.98 match

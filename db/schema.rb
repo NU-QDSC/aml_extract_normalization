@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_07_21_192305) do
+ActiveRecord::Schema[7.1].define(version: 2024_09_01_121759) do
   create_table "chromosomal_abnormalities", force: :cascade do |t|
     t.string "abnormality"
     t.string "abnormality_type"
@@ -53,6 +53,38 @@ ActiveRecord::Schema[7.1].define(version: 2024_07_21_192305) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["chromosomal_abnormality_id"], name: "idx_on_chromosomal_abnormality_id_0df87e2272"
+  end
+
+  create_table "dna_methylation_array_pathology_case_findings", force: :cascade do |t|
+    t.integer "dna_methylation_array_pathology_case_id"
+    t.string "methylation_class"
+    t.string "methylation_subclass"
+    t.string "score"
+    t.string "interpretation"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dna_methylation_array_pathology_case_id"], name: "idx_on_dna_methylation_array_pathology_case_id_78b0a70885"
+  end
+
+  create_table "dna_methylation_array_pathology_cases", force: :cascade do |t|
+    t.string "west_mrn"
+    t.integer "pathology_case_key"
+    t.string "source_system"
+    t.integer "pathology_case_source_system_id"
+    t.string "accession_nbr_formatted"
+    t.string "group_desc"
+    t.string "snomed_code"
+    t.string "snomed_name"
+    t.date "accessioned_date_key"
+    t.date "case_collect_date_key"
+    t.string "section_description"
+    t.text "note_text"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "associated_accession_nbr_formatted_block_tumor"
+    t.string "associated_accession_nbr_formatted"
+    t.string "associated_accession_nbr_formatted_block"
+    t.string "associated_accession_nbr_formatted_block_tumor_percentage"
   end
 
   create_table "gene_abnormalities", force: :cascade do |t|
