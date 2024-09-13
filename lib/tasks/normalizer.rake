@@ -532,7 +532,7 @@ def load_ngs_pathology_findings
   NgsPathologyCase.all.each do |ngs_pathology_case|
     puts ngs_pathology_case.group_desc
     case ngs_pathology_case.group_desc
-    when 'Pan-Heme NGS Panel'
+    when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel'
       classification_version = { version: 1, classifications: [ { significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
                                                                 { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown Significance\s*', Regexp::IGNORECASE) }] }
       puts classification_version[:version]
