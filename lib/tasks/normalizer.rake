@@ -1988,24 +1988,24 @@ def load_dna_methylation_array_pathology_findings
 end
 
 def parse_snv(classification, ngs_pathology_case, subsection, genes)
-  subsection[:subsection_text].split("\n").each_slice(3) do |variant|
-    if genes.any? { |gene| variant[0].match?(Regexp.new("^\s*#{gene}", Regexp::IGNORECASE)) }
+  lines = subsection[:subsection_text].split("\n")
+  lines.each_with_index do |line, i|
+    if match_gene?(genes, line)
       ngs_pathology_case_finding = NgsPathologyCaseFinding.new
       ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
-      ngs_pathology_case_finding.raw_finding = variant.join("\n")
-
       ngs_pathology_case_finding.significance = classification[:significance]
       ngs_pathology_case_finding.status = 'found'
-      variant.compact
-      if variant.size == 3
+
+      if i == lines.size-2 || match_gene?(genes, lines[i+2])
+        ngs_pathology_case_finding.raw_finding = [line, lines[i+1]].join("\n")
         puts 'gene'
-        puts variant[0]
-        gene = variant[0].split(' ').first
+        puts line
+        gene, transcript = line.split(' ').first
         if gene.present?
           ngs_pathology_case_finding.gene = gene
         end
 
-        variant_name, transcript = variant[1].strip.split(' ')
+        variant_name, allelic_frequency_raw = lines[i+1].strip.split(' ').take(2)
 
         puts 'variant_name'
         puts variant_name
@@ -2021,7 +2021,50 @@ def parse_snv(classification, ngs_pathology_case, subsection, genes)
 
         ngs_pathology_case_finding.variant_type = subsection[:variant_type]
 
-        c_dot, allelic_frequency_raw = variant[2].strip.split(' ').take(2)
+        puts 'allelic frequency raw'
+        puts allelic_frequency_raw
+        if allelic_frequency_raw.present?
+          percentage_matches = allelic_frequency_raw.scan(/(\d*\.?\d+)%/)
+          if percentage_matches.size >=1
+            if percentage_matches.size == 1
+              allelic_frequency = percentage_matches.first.first.to_s
+            else
+              allelic_frequency = percentage_matches.map { |percentage_match| percentage_match.first.to_s }.join('|')
+            end
+          end
+          puts 'allelic_frequency'
+          puts allelic_frequency
+          if allelic_frequency
+            ngs_pathology_case_finding.allelic_frequency = allelic_frequency
+          end
+        end
+        ngs_pathology_case_finding.save!
+      elsif i == lines.size - 3 || match_gene?(genes, lines[i+3])
+        ngs_pathology_case_finding.raw_finding = [line, lines[i+2]].join("\n")
+        puts 'gene'
+        puts line
+        gene = line.split(' ').first
+        if gene.present?
+          ngs_pathology_case_finding.gene = gene
+        end
+
+        variant_name, transcript = lines[i+1].strip.split(' ')
+
+        puts 'variant_name'
+        puts variant_name
+        if variant_name.present?
+          ngs_pathology_case_finding.variant_name = variant_name
+        end
+
+        puts 'transcript'
+        puts transcript
+        if transcript.present?
+          ngs_pathology_case_finding.transcript = transcript
+        end
+
+        ngs_pathology_case_finding.variant_type = subsection[:variant_type]
+
+        c_dot, allelic_frequency_raw = lines[i+2].strip.split(' ').take(2)
         puts 'allelic frequency raw'
         puts allelic_frequency_raw
         if allelic_frequency_raw.present?
@@ -2041,6 +2084,8 @@ def parse_snv(classification, ngs_pathology_case, subsection, genes)
         end
         ngs_pathology_case_finding.save!
       end
+    else
+      next
     end
   end
 end
@@ -2123,4 +2168,8 @@ def parse_rearrangement(classification, ngs_pathology_case, subsection, genes)
   end
 end
 
-
+def match_gene?(genes, line)
+  if line.present?
+    genes.any? { |gene| line.match?(Regexp.new("^\s*#{gene}", Regexp::IGNORECASE)) }
+  end
+end
