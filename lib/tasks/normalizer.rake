@@ -583,12 +583,12 @@ def load_ngs_pathology_findings
                 end_markers << { variant_type: 'Rearrangement', trigger:  Regexp.new('^Rearrangements', Regexp::IGNORECASE) }
                 end_markers << { variant_type: 'Pertinent Negative', trigger:  Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
 
-                end_markers.each do |end_marker|
-                  if section_text.match?(start_marker[:trigger])
-                    subsections << { subsection_text: extract_between_regular_expressions(section_text, start_marker[:trigger], end_marker[:trigger]), variant_type: start_marker[:variant_type] }
-                    start_marker = end_marker
-                  elsif section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
+                end_markers.each_with_index do |end_marker, i|
+                  if i == 0 && section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
                     subsections << { subsection_text: section_text, variant_type: start_marker[:variant_type] }
+                    start_marker = end_marker
+                  elsif section_text.match?(start_marker[:trigger])
+                    subsections << { subsection_text: extract_between_regular_expressions(section_text, start_marker[:trigger], end_marker[:trigger]), variant_type: start_marker[:variant_type] }
                     start_marker = end_marker
                   end
                 end
