@@ -550,7 +550,8 @@ def load_ngs_pathology_findings
     puts ngs_pathology_case.group_desc
     case ngs_pathology_case.group_desc
     when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel'
-      classification_version = { version: 1, classifications: [{ significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
+      classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
+                                                               { significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
                                                                { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown Significance\s*', Regexp::IGNORECASE) }] }
       puts classification_version[:version]
       case classification_version[:version]
@@ -580,6 +581,9 @@ def load_ngs_pathology_findings
               puts 'end section'
               subsections = []
               case classification[:significance]
+              when 'genomic signature'
+                start_marker = { variant_type: 'Genomic Signature', trigger:  Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE) }
+                subsections <<  { subsection_text: section_text, variant_type: start_marker[:variant_type] }
               when 'known'
                 start_marker = { variant_type: 'SNV', trigger:  Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance\s*', Regexp::IGNORECASE) }
 
@@ -611,8 +615,19 @@ def load_ngs_pathology_findings
                 else
                   start_marker = Regexp.new('^\s*Gene Alteration VAF\s*', Regexp::IGNORECASE)
                   end_marker = Regexp.new('^\s*NOTE:', Regexp::IGNORECASE)
+                  subsection_text = extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker])
 
-                  subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker]), variant_type: 'SNV' }
+                  if subsection_text
+                    subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker]), variant_type: 'SNV', declaration_type: 'single-line' }
+                  end
+
+                  start_marker = Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance\s*', Regexp::IGNORECASE)
+                  end_marker = Regexp.new('^\s*NOTE:', Regexp::IGNORECASE)
+                  subsection_text = extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker])
+
+                  if subsection_text
+                    subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker]), variant_type: 'SNV', declaration_type: 'multiline' }
+                  end
                 end
               end
               puts 'come on guy'
@@ -633,6 +648,11 @@ def load_ngs_pathology_findings
                   ngs_pathology_case_finding.save!
                 else
                   case classification[:significance]
+                  when 'genomic signature'
+                    case subsection[:variant_type]
+                    when
+                      parse_genomic_signature(classification, ngs_pathology_case, subsection, genes)
+                    end
                   when 'known'
                     case subsection[:variant_type]
                     when 'SNV'
@@ -645,46 +665,51 @@ def load_ngs_pathology_findings
                       parse_pertinent_negative(classification, ngs_pathology_case, subsection, genes)
                     end
                   when 'unknown'
-                    subsection[:subsection_text].split("\n").each do |variant|
-                      ngs_pathology_case_finding = NgsPathologyCaseFinding.new
-                      ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
-                      ngs_pathology_case_finding.raw_finding = variant
-                      ngs_pathology_case_finding.significance = classification[:significance]
-                      ngs_pathology_case_finding.status = 'found'
-                      variant_components = variant.split(' ').compact
+                    case subsection[:declaration_type]
+                    when 'multiline'
+                      parse_snv(classification, ngs_pathology_case, subsection, genes)
+                    when 'singleline'
+                      subsection[:subsection_text].split("\n").each do |variant|
+                        ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+                        ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+                        ngs_pathology_case_finding.raw_finding = variant
+                        ngs_pathology_case_finding.significance = classification[:significance]
+                        ngs_pathology_case_finding.status = 'found'
+                        variant_components = variant.split(' ').compact
 
-                      puts 'gene'
-                      puts variant_components[0]
-                      if variant_components[0].present?
-                        ngs_pathology_case_finding.gene = variant_components[0]
-                      end
+                        puts 'gene'
+                        puts variant_components[0]
+                        if variant_components[0].present?
+                          ngs_pathology_case_finding.gene = variant_components[0]
+                        end
 
-                      puts 'variant_name'
-                      puts variant_components[1]
-                      if variant_components[1].present?
-                        ngs_pathology_case_finding.variant_name = variant_components[1]
-                      end
+                        puts 'variant_name'
+                        puts variant_components[1]
+                        if variant_components[1].present?
+                          ngs_pathology_case_finding.variant_name = variant_components[1]
+                        end
 
-                      ngs_pathology_case_finding.variant_type = subsection[:variant_type]
-                      puts 'allelic frequency raw'
-                      allelic_frequency_raw = variant_components[2]
-                      puts allelic_frequency_raw
-                      if allelic_frequency_raw.present?
-                        percentage_matches = allelic_frequency_raw.scan(/(\d*\.?\d+)%/)
-                        if percentage_matches.size >=1
-                          if percentage_matches.size == 1
-                            allelic_frequency = percentage_matches.first.first.to_s
-                          else
-                            allelic_frequency = percentage_matches.map { |percentage_match| percentage_match.first.to_s }.join('|')
+                        ngs_pathology_case_finding.variant_type = subsection[:variant_type]
+                        puts 'allelic frequency raw'
+                        allelic_frequency_raw = variant_components[2]
+                        puts allelic_frequency_raw
+                        if allelic_frequency_raw.present?
+                          percentage_matches = allelic_frequency_raw.scan(/(\d*\.?\d+)%/)
+                          if percentage_matches.size >=1
+                            if percentage_matches.size == 1
+                              allelic_frequency = percentage_matches.first.first.to_s
+                            else
+                              allelic_frequency = percentage_matches.map { |percentage_match| percentage_match.first.to_s }.join('|')
+                            end
+                          end
+                          puts 'allelic_frequency'
+                          puts allelic_frequency
+                          if allelic_frequency
+                            ngs_pathology_case_finding.allelic_frequency = allelic_frequency
                           end
                         end
-                        puts 'allelic_frequency'
-                        puts allelic_frequency
-                        if allelic_frequency
-                          ngs_pathology_case_finding.allelic_frequency = allelic_frequency
-                        end
+                        ngs_pathology_case_finding.save!
                       end
-                      ngs_pathology_case_finding.save!
                     end
                   end
                 end
@@ -2202,7 +2227,7 @@ def parse_pertinent_negative(classification, ngs_pathology_case, subsection, gen
     if gene.blank? && variant_name.present?
       gene = variant_name
     end
-    if gene.size <= 30
+    if gene.size <= 40
       ngs_pathology_case_finding.gene = gene
       ngs_pathology_case_finding.variant_name = variant_name
       ngs_pathology_case_finding.variant_type = subsection[:variant_type]
@@ -2211,9 +2236,26 @@ def parse_pertinent_negative(classification, ngs_pathology_case, subsection, gen
   end
 end
 
+def parse_genomic_signature(classification, ngs_pathology_case, subsection, genes)
+  subsection[:subsection_text].split("\n").drop(1).each do |genomic_signature|
+    ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+    ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+    ngs_pathology_case_finding.raw_finding = genomic_signature
+    ngs_pathology_case_finding.significance = classification[:significance]
+
+    variant_name = genomic_signature.split(' ')
+    genomic_signature_result = variant_name.pop(1).first
+    variant_name = variant_name.join(' ')
+
+    ngs_pathology_case_finding.variant_name = variant_name
+    ngs_pathology_case_finding.genomic_signature_result = genomic_signature_result
+    ngs_pathology_case_finding.variant_type = subsection[:variant_type]
+    ngs_pathology_case_finding.save!
+  end
+end
+
 def match_gene?(genes, line)
   if line.present?
     genes.any? { |gene| line.match?(Regexp.new("^\s*#{gene}", Regexp::IGNORECASE)) }
   end
 end
-

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_09_20_101724) do
+ActiveRecord::Schema[7.1].define(version: 2024_09_23_093742) do
   create_table "chromosomal_abnormalities", force: :cascade do |t|
     t.string "abnormality"
     t.string "abnormality_type"
@@ -139,6 +139,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_09_20_101724) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "copy_number"
+    t.string "genomic_signature_result"
     t.index ["ngs_pathology_case_id"], name: "index_ngs_pathology_case_findings_on_ngs_pathology_case_id"
   end
 
