@@ -511,11 +511,16 @@ def extract_between_regular_exression_and_empty_newline(text, start_marker)
   end
 end
 
-def extract_between_regular_exressions_or_empty_newline(text, start_marker, end_marker)
+def extract_between_regular_expressions_or_empty_newline(text, start_marker, end_markers)
   extraction = nil
-  if text.match?(end_marker)
-    extraction = extract_between_regular_expressions(text, start_marker, end_marker)
-  else
+
+  end_markers.each do |end_marker|
+    if text.match?(end_marker)
+      extraction = extract_between_regular_expressions(text, start_marker, end_marker)
+    end
+  end
+
+  if extraction.blank?
     extraction = extract_between_regular_exression_and_empty_newline(text, start_marker)
   end
   extraction
@@ -545,8 +550,8 @@ def load_ngs_pathology_findings
     puts ngs_pathology_case.group_desc
     case ngs_pathology_case.group_desc
     when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel'
-      classification_version = { version: 1, classifications: [ { significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
-                                                                { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown Significance\s*', Regexp::IGNORECASE) }] }
+      classification_version = { version: 1, classifications: [{ significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
+                                                               { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown Significance\s*', Regexp::IGNORECASE) }] }
       puts classification_version[:version]
       case classification_version[:version]
       when 1
@@ -579,9 +584,9 @@ def load_ngs_pathology_findings
                 start_marker = { variant_type: 'SNV', trigger:  Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance\s*', Regexp::IGNORECASE) }
 
                 end_markers = []
-                end_markers << { variant_type: 'CNV', trigger:  Regexp.new('^Copy Number Variants', Regexp::IGNORECASE) }
-                end_markers << { variant_type: 'Rearrangement', trigger:  Regexp.new('^Rearrangements', Regexp::IGNORECASE) }
-                end_markers << { variant_type: 'Pertinent Negative', trigger:  Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
+                end_markers << { variant_type: 'CNV', trigger: Regexp.new('^Copy Number Variants', Regexp::IGNORECASE) }
+                end_markers << { variant_type: 'Rearrangement', trigger: Regexp.new('^Rearrangements', Regexp::IGNORECASE) }
+                end_markers << pertinent_negative = { variant_type: 'Pertinent Negative', trigger: Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
 
                 end_markers.each_with_index do |end_marker, i|
                   if i == 0 && section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
@@ -592,6 +597,14 @@ def load_ngs_pathology_findings
                     start_marker = end_marker
                   end
                 end
+
+                if section_text.match?(pertinent_negative[:trigger])
+                  end_markers = []
+                  end_markers << Regexp.new("^Drugs Associated with", Regexp::IGNORECASE)
+                  end_markers << Regexp.new("^Potentially Relevant Targeted Clinical Trials", Regexp::IGNORECASE)
+
+                  subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, pertinent_negative[:trigger], end_markers), variant_type: start_marker[:variant_type] }
+                end
               when 'unknown'
                 if section_text.match?(/\s*none identified\s*/i)
                   subsections << { subsection_text: section_text, variant_type: 'SNV' }
@@ -599,7 +612,7 @@ def load_ngs_pathology_findings
                   start_marker = Regexp.new('^\s*Gene Alteration VAF\s*', Regexp::IGNORECASE)
                   end_marker = Regexp.new('^\s*NOTE:', Regexp::IGNORECASE)
 
-                  subsections << { subsection_text: extract_between_regular_exressions_or_empty_newline(section_text, start_marker, end_marker), variant_type: 'SNV' }
+                  subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker]), variant_type: 'SNV' }
                 end
               end
               puts 'come on guy'
@@ -628,6 +641,8 @@ def load_ngs_pathology_findings
                       parse_cnv(classification, ngs_pathology_case, subsection, genes)
                     when 'Rearrangement'
                       parse_rearrangement(classification, ngs_pathology_case, subsection, genes)
+                    when 'Pertinent Negative'
+                      parse_pertinent_negative(classification, ngs_pathology_case, subsection, genes)
                     end
                   when 'unknown'
                     subsection[:subsection_text].split("\n").each do |variant|
@@ -2168,8 +2183,37 @@ def parse_rearrangement(classification, ngs_pathology_case, subsection, genes)
   end
 end
 
+def parse_pertinent_negative(classification, ngs_pathology_case, subsection, genes)
+  subsection[:subsection_text].split("\n").drop(2).each do |pertinent_negative|
+    ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+    ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+    ngs_pathology_case_finding.raw_finding = pertinent_negative
+
+    ngs_pathology_case_finding.significance = classification[:significance]
+    ngs_pathology_case_finding.status = 'pass'
+
+    gene = pertinent_negative.split(' ')
+    gene.pop(2)
+    gene = gene.join(' ')
+    variant_name = pertinent_negative.split(' ')
+    variant_name.pop(1)
+    variant_name = variant_name.join(' ')
+
+    if gene.blank? && variant_name.present?
+      gene = variant_name
+    end
+    if gene.size <= 30
+      ngs_pathology_case_finding.gene = gene
+      ngs_pathology_case_finding.variant_name = variant_name
+      ngs_pathology_case_finding.variant_type = subsection[:variant_type]
+      ngs_pathology_case_finding.save!
+    end
+  end
+end
+
 def match_gene?(genes, line)
   if line.present?
     genes.any? { |gene| line.match?(Regexp.new("^\s*#{gene}", Regexp::IGNORECASE)) }
   end
 end
+
