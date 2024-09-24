@@ -557,13 +557,32 @@ def load_ngs_pathology_findings
       case classification_version[:version]
       when 1
         found_classifications = []
-        ngs_pathology_case.note_text.split("\n").each do |line|
-          classification_version[:classifications].each do |classification|
-            if line.match?(classification[:marker])
-              found_classifications << classification
-            end
+        found_classifications = find_classifications(ngs_pathology_case, classification_version)
+        germline_classification = { significance: 'germline', marker: Regexp.new('^\s*Variants suspicious for hereditary cancer predisposition:\s*', Regexp::IGNORECASE)}
+
+        section_texts =[]
+        found_classifications.each_with_index do |classification, i|
+          if found_classifications[i+1]
+            section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, classification[:marker], found_classifications[i+1][:marker])
+          else
+            section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, classification[:marker], nil)
           end
+          section_texts << { section_text: section_text, classification: classification }
         end
+
+        section_text_known = section_texts.detect { |section_text| section_text[:classification][:significance] == 'known' }
+
+        if section_text_known && section_text_known[:section_text].match?(germline_classification[:marker])
+          germline_in_known_classification = true
+        else
+          classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
+                                                                   germline_classification,
+                                                                   { significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
+                                                                   { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown Significance\s*', Regexp::IGNORECASE) }] }
+          found_classifications = find_classifications(ngs_pathology_case, classification_version)
+          germline_in_known_classification = false
+        end
+
         puts 'how many found found_classifications'
         puts found_classifications.size
         if found_classifications.any?
@@ -581,13 +600,17 @@ def load_ngs_pathology_findings
               puts 'end section'
               subsections = []
               case classification[:significance]
+              when 'germline'
+                subsections <<  { subsection_text: section_text, variant_type: 'Germline' }
               when 'genomic signature'
-                start_marker = { variant_type: 'Genomic Signature', trigger:  Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE) }
-                subsections <<  { subsection_text: section_text, variant_type: start_marker[:variant_type] }
+                subsections <<  { subsection_text: section_text, variant_type: 'Genomic Signature' }
               when 'known'
                 start_marker = { variant_type: 'SNV', trigger:  Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance\s*', Regexp::IGNORECASE) }
 
                 end_markers = []
+                if germline_in_known_classification
+                  end_markers << { variant_type: 'Germline', trigger: germline_classification[:marker] }
+                end
                 end_markers << { variant_type: 'CNV', trigger: Regexp.new('^Copy Number Variants', Regexp::IGNORECASE) }
                 end_markers << { variant_type: 'Rearrangement', trigger: Regexp.new('^Rearrangements', Regexp::IGNORECASE) }
                 end_markers << pertinent_negative = { variant_type: 'Pertinent Negative', trigger: Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
@@ -648,6 +671,8 @@ def load_ngs_pathology_findings
                   ngs_pathology_case_finding.save!
                 else
                   case classification[:significance]
+                  when 'germline'
+                    parse_germline(classification, ngs_pathology_case, subsection[:subsection_text], genes)
                   when 'genomic signature'
                     case subsection[:variant_type]
                     when
@@ -663,6 +688,8 @@ def load_ngs_pathology_findings
                       parse_rearrangement(classification, ngs_pathology_case, subsection, genes)
                     when 'Pertinent Negative'
                       parse_pertinent_negative(classification, ngs_pathology_case, subsection, genes)
+                    when 'Germline'
+                      parse_germline(classification, ngs_pathology_case, subsection[:subsection_text], genes)
                     end
                   when 'unknown'
                     case subsection[:declaration_type]
@@ -2227,7 +2254,8 @@ def parse_pertinent_negative(classification, ngs_pathology_case, subsection, gen
     if gene.blank? && variant_name.present?
       gene = variant_name
     end
-    if gene.size <= 40
+
+    if gene.present? && gene.size <= 40
       ngs_pathology_case_finding.gene = gene
       ngs_pathology_case_finding.variant_name = variant_name
       ngs_pathology_case_finding.variant_type = subsection[:variant_type]
@@ -2254,8 +2282,38 @@ def parse_genomic_signature(classification, ngs_pathology_case, subsection, gene
   end
 end
 
+def parse_germline(classification, ngs_pathology_case, text, genes)
+  text.split("\n").each do |line|
+    if match_gene?(genes, line)
+      ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+      ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+      ngs_pathology_case_finding.raw_finding = line
+      ngs_pathology_case_finding.significance = classification[:significance]
+
+      gene, variant_name = line.split(' ')
+
+      ngs_pathology_case_finding.gene = gene
+      ngs_pathology_case_finding.variant_name = variant_name
+      ngs_pathology_case_finding.variant_type = 'Germline'
+      ngs_pathology_case_finding.save!
+    end
+  end
+end
+
 def match_gene?(genes, line)
   if line.present?
     genes.any? { |gene| line.match?(Regexp.new("^\s*#{gene}", Regexp::IGNORECASE)) }
   end
+end
+
+def find_classifications(ngs_pathology_case, classification_version)
+  found_classifications = []
+  ngs_pathology_case.note_text.split("\n").each do |line|
+    classification_version[:classifications].each do |classification|
+      if line.match?(classification[:marker])
+        found_classifications << classification
+      end
+    end
+  end
+  found_classifications
 end
