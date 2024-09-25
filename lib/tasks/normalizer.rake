@@ -58,7 +58,7 @@ namespace :normalizer do
     directory_path = Rails.application.credentials.nmedw[Rails.env.to_sym][:files]
     directory_path = "#{directory_path}/STU00220340/"
     # directory_path = 'lib/setup/data/normalization_method/regular_expression/fish'
-    files = Dir.glob(File.join(directory_path, 'FISH_pathology.*.xlsx'))
+    files = Dir.glob(File.join(directory_path, 'FISH_pathology*.xlsx'))
     files = files.sort_by { |file| File.stat(file).mtime }
     normalization_method = 'fish regular expression'
     load_pathology_cases_v2(files, west_mrn: args[:west_mrn], normalization_method: normalization_method)
