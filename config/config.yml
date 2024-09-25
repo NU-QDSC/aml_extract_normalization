@@ -1,0 +1,18 @@
+---
+application: aml_extract_normalization
+repository:  git@github.com:nu-qdsc/aml_extract_normalization.git
+deployer: deploy
+development:
+  server_name: 0.0.0.0:3000
+test:
+  server_name: 0.0.0.0:3000
+staging:
+  app_host: vtfsmmbtiapps01.fsm.northwestern.edu
+  server_name: vtfsmmbtiapps01.fsm.northwestern.edu
+production:
+  app_host: vfsmmbtiapps01.fsm.northwestern.edu
+  server_name: vfsmmbtiapps01.fsm.northwestern.edu
+support:
+  recipients:
+    - m-gurley@northwestern.edu
+  sender_address: data-router@northwestern.edu
