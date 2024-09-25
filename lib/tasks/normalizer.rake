@@ -619,7 +619,11 @@ def load_ngs_pathology_findings
                   if i == 0 && section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
                     subsections << { subsection_text: section_text, variant_type: start_marker[:variant_type] }
                     start_marker = end_marker
-                  elsif section_text.match?(start_marker[:trigger])
+                  elsif section_text.match?(start_marker[:trigger]) && section_text.match?(end_marker[:trigger])
+                    # puts 'made it to porto'
+                    # puts start_marker[:variant_type]
+                    # puts start_marker[:trigger]
+                    # puts end_marker[:trigger]
                     subsections << { subsection_text: extract_between_regular_expressions(section_text, start_marker[:trigger], end_marker[:trigger]), variant_type: start_marker[:variant_type] }
                     start_marker = end_marker
                   end
@@ -629,6 +633,8 @@ def load_ngs_pathology_findings
                   end_markers = []
                   end_markers << Regexp.new("^Drugs Associated with", Regexp::IGNORECASE)
                   end_markers << Regexp.new("^Potentially Relevant Targeted Clinical Trials", Regexp::IGNORECASE)
+                  end_markers << Regexp.new("^*No mutations were identified.", Regexp::IGNORECASE)
+
 
                   subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, pertinent_negative[:trigger], end_markers), variant_type: start_marker[:variant_type] }
                 end
@@ -644,12 +650,14 @@ def load_ngs_pathology_findings
                     subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker]), variant_type: 'SNV', declaration_type: 'single-line' }
                   end
 
-                  start_marker = Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance\s*', Regexp::IGNORECASE)
-                  end_marker = Regexp.new('^\s*NOTE:', Regexp::IGNORECASE)
-                  subsection_text = extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker])
+                  if subsection_text.blank?
+                    start_marker = Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance\s*', Regexp::IGNORECASE)
+                    end_marker = Regexp.new('^\s*NOTE:', Regexp::IGNORECASE)
+                    subsection_text = extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker])
 
-                  if subsection_text
-                    subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker]), variant_type: 'SNV', declaration_type: 'multiline' }
+                    if subsection_text
+                      subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, start_marker, [end_marker]), variant_type: 'SNV', declaration_type: 'multiline' }
+                    end
                   end
                 end
               end
@@ -695,7 +703,7 @@ def load_ngs_pathology_findings
                     case subsection[:declaration_type]
                     when 'multiline'
                       parse_snv(classification, ngs_pathology_case, subsection, genes)
-                    when 'singleline'
+                    when 'single-line'
                       subsection[:subsection_text].split("\n").each do |variant|
                         ngs_pathology_case_finding = NgsPathologyCaseFinding.new
                         ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
