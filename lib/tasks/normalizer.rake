@@ -55,7 +55,7 @@ namespace :normalizer do
   task :load_fish_pathology_cases_and_findings_regular_expression, [:west_mrn] => :environment do |t, args|
     puts 'you need to care'
     puts args[:west_mrn]
-    directory_path = Rails.application.credentials.ilcc[Rails.env.to_sym][:nmedw]
+    directory_path = Rails.application.credentials.nmedw[Rails.env.to_sym][:files]
     directory_path = "#{directory_path}/STU00220340/"
     # directory_path = 'lib/setup/data/normalization_method/regular_expression/fish'
     files = Dir.glob(File.join(directory_path, 'FISH_pathology.*.xlsx'))
