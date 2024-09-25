@@ -1,4 +1,3 @@
-
 set :stage, :production
 set :app_host, APP_CONFIG[ fetch(:stage).to_s ]['app_host']
 set :app_server, "#{APP_CONFIG['deployer']}@#{ fetch(:app_host) }"
