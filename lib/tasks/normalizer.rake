@@ -495,6 +495,12 @@ def load_fish_pathology_findings_regular_expression(normalization_method)
   end
 end
 
+def extract_to_regular_expression(text, end_marker)
+  # Extract the substring up to the end_marker
+  extraction = text.split("\n").take_while { |line| !line.match?(end_marker) }.join("\n")
+  extraction.strip
+end
+
 def extract_between_regular_expressions(text, start_marker, end_marker)
   # Extract the substring using regular expressions
   if end_marker
@@ -506,7 +512,7 @@ def extract_between_regular_expressions(text, start_marker, end_marker)
   extraction.strip
 end
 
-def extract_between_regular_exression_and_empty_newline(text, start_marker)
+def extract_between_regular_expression_and_empty_newline(text, start_marker)
   match_and_fragment = text.split(start_marker, 2)
   if match_and_fragment.size == 2
     extraction = match_and_fragment.last.split(/\n\s*\r?\n/, 2).first.strip
@@ -523,7 +529,7 @@ def extract_between_regular_expressions_or_empty_newline(text, start_marker, end
   end
 
   if extraction.blank?
-    extraction = extract_between_regular_exression_and_empty_newline(text, start_marker)
+    extraction = extract_between_regular_expression_and_empty_newline(text, start_marker)
   end
   extraction
 end
@@ -551,9 +557,10 @@ def load_ngs_pathology_findings
     puts ngs_pathology_case.accession_nbr_formatted
     puts ngs_pathology_case.group_desc
     case ngs_pathology_case.group_desc
-    when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel'
+    when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel', 'Comprehensive Cancer NGS Panel (NMH/LFH)'
       classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
-                                                               { significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
+                                                               { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\s*', Regexp::IGNORECASE)},
+                                                               { significance: 'known or possible', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
                                                                { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown Significance\s*', Regexp::IGNORECASE) }] }
       puts classification_version[:version]
       case classification_version[:version]
@@ -572,20 +579,22 @@ def load_ngs_pathology_findings
           section_texts << { section_text: section_text, classification: classification }
         end
 
-        section_text_known = section_texts.detect { |section_text| section_text[:classification][:significance] == 'known' }
+        section_text_known = section_texts.detect { |section_text| section_text[:classification][:significance] == 'known or possible' || section_text[:classification][:significance] == 'known'  }
 
         if section_text_known && section_text_known[:section_text].match?(germline_classification[:marker])
           germline_in_known_classification = true
         else
           classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
                                                                    germline_classification,
-                                                                   { significance: 'known', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
-                                                                   { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown Significance\s*', Regexp::IGNORECASE) }] }
+                                                                   { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\^\s*', Regexp::IGNORECASE)},
+                                                                   { significance: 'known or possible', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
+                                                                   { significance: 'possible', marker: Regexp.new('^\s*Variants of possible clinical significance\^\s*', Regexp::IGNORECASE)},
+                                                                   { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown (Clinical )?Significance(\^)?\s*', Regexp::IGNORECASE) }] }
           found_classifications = find_classifications(ngs_pathology_case, classification_version)
           germline_in_known_classification = false
         end
 
-        puts 'how many found found_classifications'
+        puts 'how many found classifications?'
         puts found_classifications.size
         if found_classifications.any?
           found_classifications.each_with_index do |classification, i|
@@ -606,9 +615,10 @@ def load_ngs_pathology_findings
                 subsections <<  { subsection_text: section_text, variant_type: 'Germline' }
               when 'genomic signature'
                 subsections <<  { subsection_text: section_text, variant_type: 'Genomic Signature' }
-              when 'known'
-                start_marker = { variant_type: 'SNV', trigger:  Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance\s*', Regexp::IGNORECASE) }
-
+              when 'known', 'known or possible', 'possible'
+                puts 'focus on them'
+                # start_marker = { variant_type: 'SNV', trigger: Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance (Clinical Trials)?\s*', Regexp::IGNORECASE) }
+                start_marker = { variant_type: 'SNV', trigger: Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance.*$', Regexp::IGNORECASE) }
                 end_markers = []
                 if germline_in_known_classification
                   end_markers << { variant_type: 'Germline', trigger: germline_classification[:marker] }
@@ -619,15 +629,34 @@ def load_ngs_pathology_findings
 
                 end_markers.each_with_index do |end_marker, i|
                   if i == 0 && section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
-                    subsections << { subsection_text: section_text, variant_type: start_marker[:variant_type] }
-                    start_marker = end_marker
-                  elsif section_text.match?(start_marker[:trigger]) && section_text.match?(end_marker[:trigger])
-                    # puts 'made it to porto'
-                    # puts start_marker[:variant_type]
-                    # puts start_marker[:trigger]
-                    # puts end_marker[:trigger]
-                    subsections << { subsection_text: extract_between_regular_expressions(section_text, start_marker[:trigger], end_marker[:trigger]), variant_type: start_marker[:variant_type] }
-                    start_marker = end_marker
+                    end_markers.each do |em|
+                      if section_text.match?(em[:trigger])
+                        subsections << { subsection_text: extract_to_regular_expression(section_text, em[:trigger]), variant_type: start_marker[:variant_type] }
+                        start_marker = em
+                        break
+                      end
+                    end
+
+                    if subsections.empty?
+                      subsections << { subsection_text: section_text, variant_type: start_marker[:variant_type] }
+                      break
+                    end
+                  elsif section_text.match?(start_marker[:trigger])
+                    puts 'made it to portugal'
+                    puts start_marker[:variant_type]
+                    if section_text.match?(end_marker[:trigger])
+                      puts 'made it to porto'
+                      puts start_marker[:variant_type]
+                      puts start_marker[:trigger]
+                      puts end_marker[:variant_type]
+                      puts end_marker[:trigger]
+                      subsections << { subsection_text: extract_between_regular_expressions(section_text, start_marker[:trigger], end_marker[:trigger]), variant_type: start_marker[:variant_type] }
+                      start_marker = end_marker
+                    elsif end_markers[i+1..end_markers.size].none? { |em|  section_text.match?(em[:trigger]) }
+                      puts 'made it to lisbon'
+                      subsections << { subsection_text: extract_between_regular_expression_and_empty_newline(section_text, start_marker[:trigger]), variant_type: start_marker[:variant_type] }
+                      break
+                    end
                   end
                 end
 
@@ -636,7 +665,6 @@ def load_ngs_pathology_findings
                   end_markers << Regexp.new("^Drugs Associated with", Regexp::IGNORECASE)
                   end_markers << Regexp.new("^Potentially Relevant Targeted Clinical Trials", Regexp::IGNORECASE)
                   end_markers << Regexp.new("^*No mutations were identified.", Regexp::IGNORECASE)
-
 
                   subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, pertinent_negative[:trigger], end_markers), variant_type: start_marker[:variant_type] }
                 end
@@ -673,6 +701,7 @@ def load_ngs_pathology_findings
                 puts 'end subsection'
 
                 if subsection[:subsection_text].match?(/\s*none identified\s*/i)
+                  puts 'hey ugo'
                   ngs_pathology_case_finding = NgsPathologyCaseFinding.new
                   ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
                   ngs_pathology_case_finding.variant_type = subsection[:variant_type]
@@ -688,7 +717,7 @@ def load_ngs_pathology_findings
                     when
                       parse_genomic_signature(classification, ngs_pathology_case, subsection, genes)
                     end
-                  when 'known'
+                  when 'known', 'known or possible', 'possible'
                     case subsection[:variant_type]
                     when 'SNV'
                       parse_snv(classification, ngs_pathology_case, subsection, genes)
@@ -788,7 +817,7 @@ def load_ngs_pathology_findings
 
             if section_text.present?
               start_marker =  Regexp.new('^\s*Gene Amino Acid Change Coding Allele Frequency Transcript\s*', Regexp::IGNORECASE)
-              subsection_text = extract_between_regular_exression_and_empty_newline(section_text, start_marker)
+              subsection_text = extract_between_regular_expression_and_empty_newline(section_text, start_marker)
               puts 'begin subsection'
               puts subsection_text
               puts 'end subsection'
@@ -985,7 +1014,7 @@ def load_ngs_pathology_findings
 
             if section_text.present?
               start_marker =  Regexp.new('^Gene Amino Acid Change Coding Allele\s+Frequency Transcript', Regexp::IGNORECASE)
-              subsection_text = extract_between_regular_exression_and_empty_newline(section_text, start_marker)
+              subsection_text = extract_between_regular_expression_and_empty_newline(section_text, start_marker)
               puts 'begin subsection'
               puts subsection_text
               puts 'end subsection'
@@ -1799,7 +1828,7 @@ def load_dna_methylation_array_pathology_findings
 
       if section_text_result.present?
         start_marker = Regexp.new('^Methylation Class\s+Score\s+Interpretation', Regexp::IGNORECASE)
-        subsection_text_methylation_class = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+        subsection_text_methylation_class = extract_between_regular_expression_and_empty_newline(section_text_result, start_marker)
 
         if subsection_text_methylation_class
           puts 'begin section_text_result begin subsection_text_methylation_class'
@@ -1847,7 +1876,7 @@ def load_dna_methylation_array_pathology_findings
         end
 
         start_marker = Regexp.new('^Methylation Subclass Score Interpretation', Regexp::IGNORECASE)
-        subsection_text_methylation_subclass = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+        subsection_text_methylation_subclass = extract_between_regular_expression_and_empty_newline(section_text_result, start_marker)
 
         if subsection_text_methylation_subclass
           puts 'begin section_text_result begin subsection_text_methylation_subclass'
@@ -1958,7 +1987,7 @@ def load_dna_methylation_array_pathology_findings
           dna_methylation_array_pathology_case_finding.save!
         else
           start_marker =  Regexp.new('^Methylation Class\s+Score\s+Interpretation', Regexp::IGNORECASE)
-          subsection_text_methylation_class = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+          subsection_text_methylation_class = extract_between_regular_expression_and_empty_newline(section_text_result, start_marker)
           if subsection_text_methylation_class.present?
             puts 'begin section_text_result begin subsection_text_methylation_class'
             puts subsection_text_methylation_class
@@ -2004,7 +2033,7 @@ def load_dna_methylation_array_pathology_findings
              end
           end
           start_marker =  Regexp.new('^Methylation Subclass Score Interpretation', Regexp::IGNORECASE)
-          subsection_text_methylation_subclass = extract_between_regular_exression_and_empty_newline(section_text_result, start_marker)
+          subsection_text_methylation_subclass = extract_between_regular_expression_and_empty_newline(section_text_result, start_marker)
           if subsection_text_methylation_subclass
             puts 'begin section_text_result begin subsection_text_methylation_subclass'
             puts subsection_text_methylation_subclass
@@ -2320,7 +2349,12 @@ def find_classifications(ngs_pathology_case, classification_version)
   found_classifications = []
   ngs_pathology_case.note_text.split("\n").each do |line|
     classification_version[:classifications].each do |classification|
+      # puts 'here is the line'
+      # puts line
+      # puts classification[:significance]
+      # puts 'before bingo'
       if line.match?(classification[:marker])
+        puts "that's a bingo"
         found_classifications << classification
       end
     end
