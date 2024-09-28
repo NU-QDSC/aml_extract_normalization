@@ -617,56 +617,45 @@ def load_ngs_pathology_findings
                 subsections <<  { subsection_text: section_text, variant_type: 'Genomic Signature' }
               when 'known', 'known or possible', 'possible'
                 puts 'focus on them'
-                # start_marker = { variant_type: 'SNV', trigger: Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance (Clinical Trials)?\s*', Regexp::IGNORECASE) }
-                start_marker = { variant_type: 'SNV', trigger: Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance.*$', Regexp::IGNORECASE) }
-                end_markers = []
+                markers = []
+                markers << snv = { variant_type: 'SNV', trigger: Regexp.new('^\s*Alteration Variant Allele Proportion Drugs Associated with Sensitivity Drugs Associated with Resistance.*$', Regexp::IGNORECASE) }
+
                 if germline_in_known_classification
-                  end_markers << { variant_type: 'Germline', trigger: germline_classification[:marker] }
+                  markers << { variant_type: 'Germline', trigger: germline_classification[:marker] }
                 end
-                end_markers << { variant_type: 'CNV', trigger: Regexp.new('^Copy Number Variants', Regexp::IGNORECASE) }
-                end_markers << { variant_type: 'Rearrangement', trigger: Regexp.new('^Rearrangements', Regexp::IGNORECASE) }
-                end_markers << pertinent_negative = { variant_type: 'Pertinent Negative', trigger: Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
+                markers << { variant_type: 'CNV', trigger: Regexp.new('^Copy Number Variants', Regexp::IGNORECASE) }
+                markers << { variant_type: 'Rearrangement', trigger: Regexp.new('^Rearrangements', Regexp::IGNORECASE) }
+                markers << pertinent_negative = { variant_type: 'Pertinent Negative', trigger: Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
 
-                end_markers.each_with_index do |end_marker, i|
-                  if i == 0 && section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
-                    end_markers.each do |em|
-                      if section_text.match?(em[:trigger])
-                        subsections << { subsection_text: extract_to_regular_expression(section_text, em[:trigger]), variant_type: start_marker[:variant_type] }
-                        start_marker = em
-                        break
-                      end
-                    end
-
-                    if subsections.empty?
-                      subsections << { subsection_text: section_text, variant_type: start_marker[:variant_type] }
-                      break
-                    end
-                  elsif section_text.match?(start_marker[:trigger])
-                    puts 'made it to portugal'
-                    puts start_marker[:variant_type]
-                    if section_text.match?(end_marker[:trigger])
-                      puts 'made it to porto'
-                      puts start_marker[:variant_type]
-                      puts start_marker[:trigger]
-                      puts end_marker[:variant_type]
-                      puts end_marker[:trigger]
-                      subsections << { subsection_text: extract_between_regular_expressions(section_text, start_marker[:trigger], end_marker[:trigger]), variant_type: start_marker[:variant_type] }
-                      start_marker = end_marker
-                    elsif end_markers[i+1..end_markers.size].none? { |em|  section_text.match?(em[:trigger]) }
-                      puts 'made it to lisbon'
-                      subsections << { subsection_text: extract_between_regular_expression_and_empty_newline(section_text, start_marker[:trigger]), variant_type: start_marker[:variant_type] }
-                      break
+                found_markers = []
+                section_text.each_line.with_index(1) do |line, line_number|
+                  markers.each do |marker|
+                    if line.match?(marker[:trigger])
+                      found_markers << marker.merge(line_number: line_number)
                     end
                   end
                 end
 
-                if section_text.match?(pertinent_negative[:trigger])
-                  end_markers = []
-                  end_markers << Regexp.new("^Drugs Associated with", Regexp::IGNORECASE)
-                  end_markers << Regexp.new("^Potentially Relevant Targeted Clinical Trials", Regexp::IGNORECASE)
-                  end_markers << Regexp.new("^*No mutations were identified.", Regexp::IGNORECASE)
+                found_markers = found_markers.sort_by { |marker| marker[:line_number] }
 
-                  subsections << { subsection_text: extract_between_regular_expressions_or_empty_newline(section_text, pertinent_negative[:trigger], end_markers), variant_type: start_marker[:variant_type] }
+                if section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
+                  if found_markers.none?
+                    subsections << { subsection_text: section_text, variant_type: snv[:variant_type] }
+                  else
+                    subsections << { subsection_text: extract_to_regular_expression(section_text, found_markers.first[:trigger]), variant_type: snv[:variant_type] }
+                  end
+                end
+
+                found_markers.each_with_index do |start_marker, i|
+                  puts 'i'
+                  puts i
+                  puts 'size'
+                  puts found_markers.size
+                  if found_markers.size == i+1
+                    subsections << { subsection_text: extract_between_regular_expression_and_empty_newline(section_text, start_marker[:trigger]), variant_type: start_marker[:variant_type] }
+                  else
+                    subsections << { subsection_text: extract_between_regular_expressions(section_text, start_marker[:trigger], found_markers[i+1][:trigger]), variant_type: start_marker[:variant_type] }
+                  end
                 end
               when 'unknown'
                 if section_text.match?(/\s*none identified\s*/i)
