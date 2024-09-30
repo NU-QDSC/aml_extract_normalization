@@ -557,7 +557,7 @@ def load_ngs_pathology_findings
     puts ngs_pathology_case.accession_nbr_formatted
     puts ngs_pathology_case.group_desc
     case ngs_pathology_case.group_desc
-    when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel', 'Comprehensive Cancer NGS Panel (NMH/LFH)'
+    when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel', 'Comprehensive Cancer NGS Panel (NMH/LFH)', 'Lymphoma Cancer NGS Panel (NMH/LFH)'
       classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
                                                                { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\s*', Regexp::IGNORECASE)},
                                                                { significance: 'known or possible', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
