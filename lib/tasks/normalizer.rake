@@ -276,6 +276,13 @@ namespace :normalizer do
       end
     end
   end
+
+  # bundle exec rake normalizer:extract_fixtures
+  desc "extracting data for fixtures"
+  task :extract_fixtures => :environment do
+    tables=['ngs_pathology_cases', 'ngs_pathology_case_findings']
+    extract_fixtures(tables)
+  end
 end
 
 def load_pathology_cases(files, options= {})
@@ -2265,29 +2272,26 @@ end
 
 def parse_pertinent_negative(classification, ngs_pathology_case, subsection, genes)
   subsection[:subsection_text].split("\n").drop(2).each do |pertinent_negative|
-    ngs_pathology_case_finding = NgsPathologyCaseFinding.new
-    ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
-    ngs_pathology_case_finding.raw_finding = pertinent_negative
+    if pertinent_negative.match?(/^\s*\*No mutations were identified./)
+      break
+    else
+      ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+      ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+      ngs_pathology_case_finding.raw_finding = pertinent_negative
 
-    ngs_pathology_case_finding.significance = classification[:significance]
-    ngs_pathology_case_finding.status = 'pass'
+      ngs_pathology_case_finding.significance = classification[:significance]
 
-    gene = pertinent_negative.split(' ')
-    gene.pop(2)
-    gene = gene.join(' ')
-    variant_name = pertinent_negative.split(' ')
-    variant_name.pop(1)
-    variant_name = variant_name.join(' ')
+      pertinent_negative = pertinent_negative.split(' ')
+      gene = variant_name = pertinent_negative.shift
+      status = pertinent_negative.join(' ')
 
-    if gene.blank? && variant_name.present?
-      gene = variant_name
-    end
-
-    if gene.present? && gene.size <= 40
-      ngs_pathology_case_finding.gene = gene
-      ngs_pathology_case_finding.variant_name = variant_name
-      ngs_pathology_case_finding.variant_type = subsection[:variant_type]
-      ngs_pathology_case_finding.save!
+      if gene.present? && gene.size <= 40
+        ngs_pathology_case_finding.gene = gene
+        ngs_pathology_case_finding.variant_name = variant_name
+        ngs_pathology_case_finding.status = status
+        ngs_pathology_case_finding.variant_type = subsection[:variant_type]
+        ngs_pathology_case_finding.save!
+      end
     end
   end
 end
@@ -2349,4 +2353,18 @@ def find_classifications(ngs_pathology_case, classification_version)
     end
   end
   found_classifications
+end
+
+def extract_fixtures(tables)
+  sql  = "SELECT * FROM %s"
+  tables.each do |table_name|
+    i = "000"
+    File.open("#{Rails.root}/lib/setup/data_out/#{table_name}.yml", 'w' ) do |file|
+      data = ActiveRecord::Base.connection.select_all(sql % table_name)
+      file.write data.inject({}) { |hash, record|
+        hash["#{table_name}_#{i.succ!}"] = record
+        hash
+      }.to_yaml
+    end
+  end
 end
