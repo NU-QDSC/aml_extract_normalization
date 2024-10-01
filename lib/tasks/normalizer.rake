@@ -630,9 +630,9 @@ def load_ngs_pathology_findings
                 if germline_in_known_classification
                   markers << { variant_type: 'Germline', trigger: germline_classification[:marker] }
                 end
-                markers << { variant_type: 'CNV', trigger: Regexp.new('^Copy Number Variants', Regexp::IGNORECASE) }
-                markers << { variant_type: 'Rearrangement', trigger: Regexp.new('^Rearrangements', Regexp::IGNORECASE) }
-                markers << pertinent_negative = { variant_type: 'Pertinent Negative', trigger: Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
+                markers << { variant_type: 'CNV', trigger: Regexp.new('^Copy Number Variants\s*', Regexp::IGNORECASE) }
+                markers << { variant_type: 'Rearrangement', trigger: Regexp.new('^Rearrangements\s*', Regexp::IGNORECASE) }
+                markers << pertinent_negative = { variant_type: 'Pertinent Negative\s*', trigger: Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
 
                 found_markers = []
                 section_text.each_line.with_index(1) do |line, line_number|
@@ -644,6 +644,11 @@ def load_ngs_pathology_findings
                 end
 
                 found_markers = found_markers.sort_by { |marker| marker[:line_number] }
+
+                #reject any 'SNV' subsections found if after the first subsection.  Its 'trigger' is resused.
+                found_markers.reject!.with_index do |found_marker, i|
+                  i > 0 && found_marker[:variant_type] == 'SNV'
+                end
 
                 if section_text.match?(/\A\s*none identified\s*(?:\n|\z)/i)
                   if found_markers.none?
