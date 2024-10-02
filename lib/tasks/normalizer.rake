@@ -633,7 +633,7 @@ def load_ngs_pathology_findings
                 end
                 markers << { variant_type: 'CNV', trigger: Regexp.new('^Copy Number Variants\s*', Regexp::IGNORECASE) }
                 markers << { variant_type: 'Rearrangement', trigger: Regexp.new('^Rearrangements\s*', Regexp::IGNORECASE) }
-                markers << pertinent_negative = { variant_type: 'Pertinent Negative\s*', trigger: Regexp.new('^Pertinent Negatives', Regexp::IGNORECASE) }
+                markers << pertinent_negative = { variant_type: 'Pertinent Negative', trigger: Regexp.new('^Pertinent Negatives\s*', Regexp::IGNORECASE) }
 
                 found_markers = []
                 section_text.each_line.with_index(1) do |line, line_number|
