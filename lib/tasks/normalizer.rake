@@ -54,7 +54,7 @@ namespace :normalizer do
   desc "Load FISH pathology cases and findings regular expression"
   task :load_fish_pathology_cases_and_findings_regular_expression, [:west_mrn] => :environment do |t, args|
     puts 'you need to care'
-    puts args[:west_mrn]
+    # puts args[:west_mrn]
     directory_path = Rails.application.credentials.nmedw[Rails.env.to_sym][:files]
     directory_path = "#{directory_path}/STU00220340/"
     # directory_path = 'lib/setup/data/normalization_method/regular_expression/fish'
@@ -71,9 +71,10 @@ namespace :normalizer do
   desc "Load cytogenetic pathology cases and findings regular expression"
   task :load_cytogenetic_pathology_cases_and_findings_regular_expression, [:west_mrn] => :environment do |t, args|
     puts 'you need to care'
-    puts args[:west_mrn]
-    directory_path = 'lib/setup/data/normalization_method/regular_expression/cytogenetics'
-    files = Dir.glob(File.join(directory_path, '*.xlsx'))
+    # puts args[:west_mrn]
+    directory_path = Rails.application.credentials.nmedw[Rails.env.to_sym][:files]
+    directory_path = "#{directory_path}/STU00220340/"
+    files = Dir.glob(File.join(directory_path, 'Cytogenetic_pathology_karyotype*.xlsx'))
     files = files.sort_by { |file| File.stat(file).mtime }
 
     normalization_method = 'cytogenetic regular expression'
