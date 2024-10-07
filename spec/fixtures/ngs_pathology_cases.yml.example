@@ -1,0 +1,13 @@
+example_ngs_pathology_case:
+  patient_ir_id: 111111
+  west_mrn: '222222'
+  source_system_name: clarity_west
+  source_system_id: 333333
+  accession_nbr_formatted: 11AB-1111111
+  accessioned_datetime: '2024-01-01'
+  case_collect_date_key: '2024-01-01'
+  group_name: NGS PANEL
+  group_desc: NGS Panel
+  report_description: A sample NGS Panel
+  section_description: Final Diagnosis
+  note_text: "These are the multi-line notes of an example NGS Panel which contain findings."
