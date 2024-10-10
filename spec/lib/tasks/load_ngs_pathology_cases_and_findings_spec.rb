@@ -1,29 +1,41 @@
 require 'rails_helper'
 require 'support/tasks_helper'
-require 'support/load_ngs_pathology_cases_and_findings_matcher'
+require 'support/be_loaded_as_ngs_pathology_cases_and_findings'
 
 describe 'rake normalizer:load_ngs_pathology_cases_and_findings' do
+  include BeLoadedAsNgsPathologyCasesAndFindings
+
   after {
     task.reenable
   }
 
   it 'loads the Nm Expanded Solid Tumor Ngs Panel Genomic Signature report' do
-    expect(:nm_expanded_solid_tumor_ngs_panel_genomic_signature).to be_loaded_as_ngs_pathology_cases_and_findings(task)
+    case_name = 'nm_expanded_solid_tumor_ngs_panel_genomic_signature'
+    invoke_task(case_name)
+    expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
 
   it 'loads the Nm Expanded Solid Tumor Ngs Panel Significant Cnv report' do
-    expect(:nm_expanded_solid_tumor_ngs_panel_significant_cnv).to be_loaded_as_ngs_pathology_cases_and_findings(task)
+    case_name = 'nm_expanded_solid_tumor_ngs_panel_significant_cnv'
+    invoke_task(case_name)
+    expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
 
   it 'loads the Nm Expanded Solid Tumor Ngs Panel Significant Snv report' do
-    expect(:nm_expanded_solid_tumor_ngs_panel_significant_snv).to be_loaded_as_ngs_pathology_cases_and_findings(task)
+    case_name = 'nm_expanded_solid_tumor_ngs_panel_significant_snv'
+    invoke_task(case_name)
+    expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
 
   it 'loads the Pan Heme Ngs Panel Found report' do
-    expect(:pan_heme_ngs_panel_found).to be_loaded_as_ngs_pathology_cases_and_findings(task)
+    case_name = 'pan_heme_ngs_panel_found'
+    invoke_task(case_name)
+    expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
 
   it 'loads the Pan Heme Ngs Panel None Identified report' do
-    expect(:pan_heme_ngs_panel_none_identified).to be_loaded_as_ngs_pathology_cases_and_findings(task)
+    case_name = 'pan_heme_ngs_panel_none_identified'
+    invoke_task(case_name)
+    expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
 end
