@@ -17,7 +17,4 @@ RSpec.configure do |config|
     metadata[:type] = :task
   end
   config.include TaskFormat, type: :task
-  config.before(:suite) do
-    Rails.application.load_tasks
-  end
 end

@@ -27,7 +27,12 @@ module BeLoadedAsNgsPathologyCasesAndFindings
       end
 
       unless values_match?(expected_case_findings.count, actual_case.ngs_pathology_case_findings.count)
-        @failure_message = "The NGS pathology case has found the following additional findings: \n#{actual_case.ngs_pathology_case_findings.pretty_inspect}"
+        additional_findings = actual_case.ngs_pathology_case_findings.reject do |actual_case_finding|
+          expected_case_findings.any? do |_, expected_case_finding|
+            (expected_case_finding.to_a - actual_case_finding.attributes.to_a).empty?
+          end
+        end
+        @failure_message = "The NGS pathology case has found #{additional_findings.count} additional #{'finding'.pluralize(additional_findings.count)}: \n#{additional_findings.pretty_inspect}"
         return false
       end
       return true

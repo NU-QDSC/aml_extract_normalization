@@ -6,33 +6,28 @@ namespace :normalizer do
     Gene.delete_all
     GeneSynonym.delete_all
     hgnc_genes = CSV.new(File.open('lib/setup/vocabulary/gene_with_protein_product.txt'), headers: true, col_sep: "\t", return_headers: false,  quote_char: "\"")
-    hgnc_genes.each do |hgnc_gene|
-      gene = Gene.new
-      gene.hgnc_id = hgnc_gene['hgnc_id']
-      gene.hgnc_symbol = hgnc_gene['symbol']
-      gene.name = hgnc_gene['name']
-      gene.location = hgnc_gene['location']
-      gene.alias_symbol = hgnc_gene['alias_symbol']
-      gene.alias_name = hgnc_gene['alias_name']
-      gene.alias_name = hgnc_gene['prev_symbol']
-      gene.alias_name = hgnc_gene['prev_name']
-      gene.alias_name = hgnc_gene['gene_group']
-      gene.save!
+    synonyms_by_gene_index = {}
+    genes = Gene.insert_all!(hgnc_genes.map.with_index{ |hgnc_gene, index|
+      synonyms = Array(hgnc_gene['alias_symbol']&.split('|')&.map{ |alias_symbol| { synonym_name: alias_symbol, synonym_type: 'symbol' } })
+      synonyms += Array(hgnc_gene['alias_name']&.split('|')&.map{ |alias_name| { synonym_name: alias_name, synonym_type: 'name' } })
+      synonyms_by_gene_index[index] = synonyms if synonyms.present?
 
-      if hgnc_gene['alias_symbol'].present?
-        hgnc_gene['alias_symbol'].split('|').each do |alias_symbol|
-          gene.gene_synonyms.build(synonym_name: alias_symbol, synonym_type: 'symbol')
-        end
-      end
+      {
+        hgnc_id: hgnc_gene['hgnc_id'],
+        hgnc_symbol: hgnc_gene['symbol'],
+        name: hgnc_gene['name'],
+        location: hgnc_gene['location'],
+        alias_symbol: hgnc_gene['alias_symbol'],
+        alias_name: hgnc_gene['alias_name'],
+        prev_symbol: hgnc_gene['prev_symbol'],
+        prev_name: hgnc_gene['prev_name'],
+        gene_group: hgnc_gene['gene_group']
+      }
+    }).to_a
 
-      if hgnc_gene['alias_name'].present?
-        hgnc_gene['alias_name'].split('|').each do |alias_name|
-          gene.gene_synonyms.build(synonym_name: alias_name, synonym_type: 'name')
-        end
-      end
-
-      gene.save!
-    end
+    GeneSynonym.insert_all!(synonyms_by_gene_index.map{ |gene_index, synonyms|
+      synonyms.map{ |synonym| synonym.merge({ gene_id: genes[gene_index]['id'] }) }
+    }.flatten)
   end
 
   # bundle exec rake normalizer:load_pathology_cases_and_findings
@@ -281,6 +276,13 @@ namespace :normalizer do
   # bundle exec rake normalizer:extract_fixtures
   desc "extracting data for fixtures"
   task :extract_fixtures => :environment do
+    tables=['ngs_pathology_cases', 'ngs_pathology_case_findings']
+    extract_fixtures(tables)
+  end
+
+  # bundle exec rake normalizer:append_ngs_pathology_fixtures ACCESSION_NBR=11AB-1111111 NAME=next_pathology_example
+  desc "appending NGS Pathology data to fixtures"
+  task :append_ngs_pathology_fixtures => :environment do
     tables=['ngs_pathology_cases', 'ngs_pathology_case_findings']
     extract_fixtures(tables)
   end
