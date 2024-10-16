@@ -793,6 +793,7 @@ def load_ngs_pathology_findings
           ngs_pathology_case_finding.save!
         end
       end
+    # when 'FusionPlex Solid Tumor Next Generation S'
     when 'Myeloid Neoplasms NGS Panel'
       classification_version = { version: 1, classifications: [ { significance: 'known', marker: Regexp.new('^*\sThese variants of known clinical significance', Regexp::IGNORECASE)},
                                                                               { significance: 'possible', marker: Regexp.new('^*\sThese variants of possible clinical significance', Regexp::IGNORECASE)},
