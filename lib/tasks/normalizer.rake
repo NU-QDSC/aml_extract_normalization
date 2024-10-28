@@ -280,11 +280,38 @@ namespace :normalizer do
     extract_fixtures(tables)
   end
 
-  # bundle exec rake normalizer:append_ngs_pathology_fixtures ACCESSION_NBR=11AB-1111111 NAME=next_pathology_example
+  # bundle exec rake normalizer:append_ngs_pathology_fixtures ACCESSION_NBR=11AB-1111111 NAME=next_pathology_example 
+  #for testing we are using NAME=pan_heme_ngs_panel_none_identified and ACCESSION_NBR=24NM-009D00620
   desc "appending NGS Pathology data to fixtures"
-  task :append_ngs_pathology_fixtures => :environment do
-    tables=['ngs_pathology_cases', 'ngs_pathology_case_findings']
-    extract_fixtures(tables)
+  task :append_ngs_pathology_fixtures => :environment do #expects case and findings with the given accession number already exist
+    accession_nbr = ENV["ACCESSION_NBR"] 
+    raise "Accession Number is a required environment variable" unless accession_nbr
+
+    name = ENV["NAME"]
+    raise "Name is a required environment variable" unless accession_nbr
+
+    ngs_pathology_case = NgsPathologyCase.find_by_accession_nbr_formatted(accession_nbr)
+    raise "No NgsPathologyCase found with accession number: #{accession_nbr}" unless ngs_pathology_case
+
+    fixtures_path = Rails.root.join("spec","fixtures")
+    File.open(fixtures_path.join("ngs_pathology_cases.yml"), "a") do |f| 
+      f.write({ name => ngs_pathology_case.attributes.except("id","created_at","updated_at") }.to_yaml[4..])
+    end
+
+    ngs_pathology_case_findings = ngs_pathology_case.ngs_pathology_case_findings
+    File.open(fixtures_path.join("ngs_pathology_case_findings.yml"), "a") do |f|
+      ngs_pathology_case_findings.each_with_index do |finding,index|
+        finding_name = '%s_case_findings_%03d' % [name, index + 1]
+        finding_attributes = finding.attributes.except("id","created_at","updated_at","ngs_pathology_case_id","gene_position","fusion_gene","fusion_gene_position")
+        f.write({ finding_name => { "ngs_pathology_case" => name }.merge(finding_attributes) }.to_yaml[4..])
+      end
+    end
+
+    # TODO: Complete next section
+    File.open(excel_filename.humanize, "w") do |f|
+      f.write(static_header_line)
+      f.write(ngs_pathology_case.to_excel_row)
+    end
   end
 end
 
@@ -793,7 +820,28 @@ def load_ngs_pathology_findings
           ngs_pathology_case_finding.save!
         end
       end
-    # when 'FusionPlex Solid Tumor Next Generation S'
+    when 'FusionPlex Solid Tumor Next Generation S'
+      start_marker = Regexp.new('^\s*Results\s*', Regexp::IGNORECASE)
+      end_marker = Regexp.new('^\s*(Comment|Assay\s*Description)\s*', Regexp::IGNORECASE)
+
+      section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, start_marker, end_marker)
+
+
+      section_text_known = section_texts.detect { |section_text| section_text[:classification][:significance] == 'known or possible' || section_text[:classification][:significance] == 'known'  }
+
+      if section_text_known && section_text_known[:section_text].match?(germline_classification[:marker])
+      germline_in_known_classification = true
+      else
+      classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
+                germline_classification,
+                { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\^\s*', Regexp::IGNORECASE)},
+                { significance: 'known or possible', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
+                { significance: 'possible', marker: Regexp.new('^\s*Variants of possible clinical significance\^\s*', Regexp::IGNORECASE)},
+                { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown (Clinical )?Significance(\^)?\s*', Regexp::IGNORECASE) }] }
+      found_classifications = find_classifications(ngs_pathology_case, classification_version)
+      germline_in_known_classification = false
+      end
+
     when 'Myeloid Neoplasms NGS Panel'
       classification_version = { version: 1, classifications: [ { significance: 'known', marker: Regexp.new('^*\sThese variants of known clinical significance', Regexp::IGNORECASE)},
                                                                               { significance: 'possible', marker: Regexp.new('^*\sThese variants of possible clinical significance', Regexp::IGNORECASE)},

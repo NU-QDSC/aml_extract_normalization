@@ -1,3 +1,5 @@
+require 'pp'
+
 module BeLoadedAsNgsPathologyCasesAndFindings
   class NgsPathologyCasesAndFindingsMatcher
     include RSpec::Matchers::Composable
