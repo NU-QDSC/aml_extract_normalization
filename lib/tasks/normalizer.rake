@@ -6,33 +6,28 @@ namespace :normalizer do
     Gene.delete_all
     GeneSynonym.delete_all
     hgnc_genes = CSV.new(File.open('lib/setup/vocabulary/gene_with_protein_product.txt'), headers: true, col_sep: "\t", return_headers: false,  quote_char: "\"")
-    hgnc_genes.each do |hgnc_gene|
-      gene = Gene.new
-      gene.hgnc_id = hgnc_gene['hgnc_id']
-      gene.hgnc_symbol = hgnc_gene['symbol']
-      gene.name = hgnc_gene['name']
-      gene.location = hgnc_gene['location']
-      gene.alias_symbol = hgnc_gene['alias_symbol']
-      gene.alias_name = hgnc_gene['alias_name']
-      gene.alias_name = hgnc_gene['prev_symbol']
-      gene.alias_name = hgnc_gene['prev_name']
-      gene.alias_name = hgnc_gene['gene_group']
-      gene.save!
+    synonyms_by_gene_index = {}
+    genes = Gene.insert_all!(hgnc_genes.map.with_index{ |hgnc_gene, index|
+      synonyms = Array(hgnc_gene['alias_symbol']&.split('|')&.map{ |alias_symbol| { synonym_name: alias_symbol, synonym_type: 'symbol' } })
+      synonyms += Array(hgnc_gene['alias_name']&.split('|')&.map{ |alias_name| { synonym_name: alias_name, synonym_type: 'name' } })
+      synonyms_by_gene_index[index] = synonyms if synonyms.present?
 
-      if hgnc_gene['alias_symbol'].present?
-        hgnc_gene['alias_symbol'].split('|').each do |alias_symbol|
-          gene.gene_synonyms.build(synonym_name: alias_symbol, synonym_type: 'symbol')
-        end
-      end
+      {
+        hgnc_id: hgnc_gene['hgnc_id'],
+        hgnc_symbol: hgnc_gene['symbol'],
+        name: hgnc_gene['name'],
+        location: hgnc_gene['location'],
+        alias_symbol: hgnc_gene['alias_symbol'],
+        alias_name: hgnc_gene['alias_name'],
+        prev_symbol: hgnc_gene['prev_symbol'],
+        prev_name: hgnc_gene['prev_name'],
+        gene_group: hgnc_gene['gene_group']
+      }
+    }).to_a
 
-      if hgnc_gene['alias_name'].present?
-        hgnc_gene['alias_name'].split('|').each do |alias_name|
-          gene.gene_synonyms.build(synonym_name: alias_name, synonym_type: 'name')
-        end
-      end
-
-      gene.save!
-    end
+    GeneSynonym.insert_all!(synonyms_by_gene_index.map{ |gene_index, synonyms|
+      synonyms.map{ |synonym| synonym.merge({ gene_id: genes[gene_index]['id'] }) }
+    }.flatten)
   end
 
   # bundle exec rake normalizer:load_pathology_cases_and_findings
@@ -283,6 +278,68 @@ namespace :normalizer do
   task :extract_fixtures => :environment do
     tables=['ngs_pathology_cases', 'ngs_pathology_case_findings']
     extract_fixtures(tables)
+  end
+
+  # bundle exec rake normalizer:append_ngs_pathology_fixtures ACCESSION_NBR=11AB-1111111 NAME=next_pathology_example
+  #for testing we are using NAME=pan_heme_ngs_panel_none_identified and ACCESSION_NBR=24NM-009D00620
+  desc "appending NGS Pathology data to fixtures"
+  task :append_ngs_pathology_fixtures => :environment do #expects case and findings with the given accession number already exist
+    require 'rubyXL'
+    require 'rubyXL/convenience_methods/cell'
+    require 'rubyXL/convenience_methods/workbook'
+    require 'rubyXL/convenience_methods/worksheet'
+
+    accession_nbr = ENV["ACCESSION_NBR"]
+    raise "Accession Number is a required environment variable" unless accession_nbr
+
+    name = ENV["NAME"]
+    raise "Name is a required environment variable" unless accession_nbr
+
+    ngs_pathology_case = NgsPathologyCase.find_by_accession_nbr_formatted(accession_nbr)
+    raise "No NgsPathologyCase found with accession number: #{accession_nbr}" unless ngs_pathology_case
+
+    ignorable_attributes = %w[id created_at updated_at ngs_pathology_case_id gene_position fusion_gene fusion_gene_position]
+    fixtures_path = Rails.root.join("spec","fixtures")
+    File.open(fixtures_path.join("ngs_pathology_cases.yml"), "a") do |f|
+      ngs_pathology_case_attributes = ngs_pathology_case.attributes.except(*ignorable_attributes)
+      ngs_pathology_case_attributes.transform_values!{ |v| v.is_a?(Date) ? v.to_s : v }
+      ngs_pathology_case_as_yaml = {
+        name => ngs_pathology_case_attributes
+      }.to_yaml
+      ngs_pathology_case_as_yaml = ngs_pathology_case_as_yaml[4..] # Remove leading ---
+      f.write(ngs_pathology_case_as_yaml)
+    end
+
+    File.open(fixtures_path.join("ngs_pathology_case_findings.yml"), "a") do |f|
+      ngs_pathology_case.ngs_pathology_case_findings.each_with_index do |finding,index|
+        ngs_pathology_case_finding_name = '%s_case_findings_%03d' % [name, index + 1]
+        ngs_pathology_case_finding_attributes = finding.attributes.except(*ignorable_attributes)
+        ngs_pathology_case_finding_attributes = {
+          "ngs_pathology_case" => name
+        }.merge(ngs_pathology_case_finding_attributes)
+        ngs_pathology_case_finding_as_yaml = {
+          ngs_pathology_case_finding_name => ngs_pathology_case_finding_attributes
+        }.to_yaml
+        ngs_pathology_case_finding_as_yaml = ngs_pathology_case_finding_as_yaml[4..] # Remove leading ---
+        f.write(ngs_pathology_case_finding_as_yaml)
+      end
+    end
+
+    workbook = RubyXL::Parser.parse(fixtures_path.join("files", "Example Ngs Pathology Case.xlsx"))
+    worksheet = workbook[0]
+    worksheet[1][0].change_contents(ngs_pathology_case.patient_ir_id) # patient ir id
+    worksheet[1][1].change_contents(ngs_pathology_case.west_mrn) # west mrn
+    worksheet[1][2].change_contents(ngs_pathology_case.source_system_name) # source system name
+    worksheet[1][3].change_contents(ngs_pathology_case.source_system_id) # source system id
+    worksheet[1][4].change_contents(ngs_pathology_case.accession_nbr_formatted) # accession nbr formatted
+    worksheet[1][5].change_contents(ngs_pathology_case.case_collect_date_key) # case collect date key
+    worksheet[1][6].change_contents(ngs_pathology_case.case_collect_date_key) # case collect date key
+    worksheet[1][7].change_contents(ngs_pathology_case.group_name) # group name
+    worksheet[1][8].change_contents(ngs_pathology_case.group_desc) # group desc
+    worksheet[1][9].change_contents(ngs_pathology_case.report_description) # report description
+    worksheet[1][10].change_contents(ngs_pathology_case.section_description) # section description
+    worksheet[1][11].change_contents(ngs_pathology_case.note_text) # note text
+    workbook.write(fixtures_path.join("files", "#{name.humanize.titleize}.xlsx"))
   end
 end
 
@@ -791,6 +848,28 @@ def load_ngs_pathology_findings
           ngs_pathology_case_finding.save!
         end
       end
+    when 'FusionPlex Solid Tumor Next Generation S'
+      start_marker = Regexp.new('^\s*Results\s*', Regexp::IGNORECASE)
+      end_marker = Regexp.new('^\s*(Comment|Assay\s*Description)\s*', Regexp::IGNORECASE)
+
+      section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, start_marker, end_marker)
+
+
+      section_text_known = section_texts.detect { |section_text| section_text[:classification][:significance] == 'known or possible' || section_text[:classification][:significance] == 'known'  }
+
+      if section_text_known && section_text_known[:section_text].match?(germline_classification[:marker])
+      germline_in_known_classification = true
+      else
+      classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
+                germline_classification,
+                { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\^\s*', Regexp::IGNORECASE)},
+                { significance: 'known or possible', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
+                { significance: 'possible', marker: Regexp.new('^\s*Variants of possible clinical significance\^\s*', Regexp::IGNORECASE)},
+                { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown (Clinical )?Significance(\^)?\s*', Regexp::IGNORECASE) }] }
+      found_classifications = find_classifications(ngs_pathology_case, classification_version)
+      germline_in_known_classification = false
+      end
+
     when 'Myeloid Neoplasms NGS Panel'
       classification_version = { version: 1, classifications: [ { significance: 'known', marker: Regexp.new('^*\sThese variants of known clinical significance', Regexp::IGNORECASE)},
                                                                               { significance: 'possible', marker: Regexp.new('^*\sThese variants of possible clinical significance', Regexp::IGNORECASE)},
