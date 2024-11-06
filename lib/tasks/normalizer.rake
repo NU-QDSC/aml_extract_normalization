@@ -2605,23 +2605,46 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
       puts augered_text
       puts 'here is the source_system_id'
       puts genetic_counseling_note.source_system_id
-      if augered_text.match?(/^\s*positive\s*/i) || augered_text.match?(/\b(VUS)\b/i)
+      if augered_text.match?(/^\s*positive:?\s*/i) || augered_text.match?(/\b(VUS)\b/i)
         puts 'we have a positive'
-        if augered_text.match?(/(?=\s*No\s*variant(?:s)?\s*identified(?:\:)\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variant(?:s)?\s*identified(?:\:)\s*)/i, 2)
-        elsif augered_text.match?(/(?=\s*No\s*variant(?:s)?\s*found(?:\:)\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variant(?:s)?\s*found(?:\:)\s*)/i, 2)
-        elsif augered_text.match?(/(?=\s*No\s*variant(?:s)?\s*detected(?:\:)\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variant(?:s)?\s*detected(?:\:)\s*)/i, 2)
-        elsif augered_text.match?(/(?=\s*No\s*mutation(?:s)?\s*identified(?:\:)\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*identified(?:\:)\s*)/i, 2)
-        elsif augered_text.match?(/(?=\s*No\s*mutation(?:s)?\s*found(?:)*\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*found(?:)*\s*)/i, 2)
-        elsif augered_text.match?(/(?=\s*No\s*mutation(?:s)?\s*detected(?:)\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*detected(?:)\s*)/i, 2)
-        elsif augered_text.match?(/(?=\s*Negative?:\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Negative?:\s*)/i, 2)
+        if augered_text.match?(/(?=\s*No\s*variants?\s*identified:?\b)/i)
+          puts 'hello in the place 1'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variants?\s*identified:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*variants?\s*found:?\b)/i)
+          puts 'hello in the place 3'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variants?\s*found:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*variants?\s*detected?:\b)/i)
+          puts 'hello in the place 4'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variants?\s*detected?:\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*mutations?\s*identified:?\b)/i)
+          puts 'hello in the place 5'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutations?\s*identified:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*mutations?\s*found:?\b)/i)
+          puts 'hello in the place 6'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutations?\s*found:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*mutations?\s*detected:?\b)/i)
+          puts 'hello in the place 7'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutations?\s*detected:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*No other variants of known\/unknown significance were identified\s*)/i)
+          puts 'hello in the place 8'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No other variants of known\/unknown significance were identified\s*)/i, 2)
+        elsif augered_text.match?(/(?=\s*Invitae Common Hereditary Cancer panel:?\b)/i)
+          puts 'hello in the place 9'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Invitae Common Hereditary Cancer panel:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*Invitae Multi-Cancers Panel:?\b)/i)
+          puts 'hello in the place 10'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Invitae Multi-Cancers Panel:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*Ambry Genetics CustomNext-Cancer \+RNAinsight panel:?\b)/i)
+          puts 'hello in the place 11'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Ambry Genetics CustomNext-Cancer \+RNAinsight panel:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*Negative:?\b)/i)
+          puts 'hello in the place 12'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Negative:?\b)/i, 2)
+        elsif augered_text.match?(/(?=\s*No other variants were identified\s*)/i)
+          puts 'hello in the place 2'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No other variants were identified\s*)/i, 2)
         else
+          puts 'hello in the place 13'
           positive_augered_text = augered_text
           negative_augered_text = nil
         end
