@@ -2598,28 +2598,29 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
     start_marker = Regexp.new('\.*Test Results\:\.*', Regexp::IGNORECASE)
     end_makrer = Regexp.new('\.*Interpretation\:\.*', Regexp::IGNORECASE)
     augered_text = extract_accross_lines_between_regular_expressions(genetic_counseling_note.note_text, start_marker, end_makrer)
+
     if !augered_text.blank?
+      augered_text.gsub!(/^[[:space:]]+|[[:space:]]+$/, '')
       puts 'here is the augered_text'
       puts augered_text
       puts 'here is the source_system_id'
       puts genetic_counseling_note.source_system_id
-
-      if augered_text.match?(/\bpositive\b/i) || augered_text.match?(/\b(VUS)\b/i)
+      if augered_text.match?(/^\s*positive\s*/i) || augered_text.match?(/\b(VUS)\b/i)
         puts 'we have a positive'
-        if augered_text.match?(/\bNo\s*variant(?:s)?\s*identified\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*variant(?:s)?\s*identified\b)/i)
-        elsif augered_text.match?(/\bNo\s*variant(?:s)?\s*found\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*variant(?:s)?\s*found\b)/i)
-        elsif augered_text.match?(/\bNo\s*variant(?:s)?\s*detected\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*variant(?:s)?\s*detected\b)/i)
-        elsif augered_text.match?(/\bNo\s*mutation(?:s)?\s*identified\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*mutation(?:s)?\s*identified\b)/i)
+        if augered_text.match?(/(?=\s*No\s*variant(?:s)?\s*identified(?:\:)\s*)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variant(?:s)?\s*identified(?:\:)\s*)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*variant(?:s)?\s*found(?:\:)\s*)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variant(?:s)?\s*found(?:\:)\s*)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*variant(?:s)?\s*detected(?:\:)\s*)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variant(?:s)?\s*detected(?:\:)\s*)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*mutation(?:s)?\s*identified(?:\:)\s*)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*identified(?:\:)\s*)/i, 2)
         elsif augered_text.match?(/(?=\s*No\s*mutation(?:s)?\s*found(?:)*\s*)/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*found(?:)*\s*)/i)
-        elsif augered_text.match?(/\bNo\s*mutation(?:s)?\s*detected\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*mutation(?:s)?\s*detected\b)/i)
-        elsif augered_text.match?(/\bNegative\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNegative\b)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*found(?:)*\s*)/i, 2)
+        elsif augered_text.match?(/(?=\s*No\s*mutation(?:s)?\s*detected(?:)\s*)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*detected(?:)\s*)/i, 2)
+        elsif augered_text.match?(/(?=\s*Negative?:\s*)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Negative?:\s*)/i, 2)
         else
           positive_augered_text = augered_text
           negative_augered_text = nil
