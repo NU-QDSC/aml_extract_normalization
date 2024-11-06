@@ -342,13 +342,14 @@ namespace :normalizer do
     workbook.write(fixtures_path.join("files", "#{name.humanize.titleize}.xlsx"))
   end
 
-  # bundle exec rake normalizer:load_genetic_counseling_notes
+  # export SOURCE_SYSTEM_ID=''
+  # bundle exec rake normalizer:load_genetic_counseling_notes_and_findings
   desc "Load Genetic Counseling Notes"
-  task(load_genetic_counseling_notes: :environment) do |t, args|
+  task(load_genetic_counseling_notes_and_findings: :environment) do |t, args|
     directory_path = 'lib/setup/data/genetic_counseling_notes/'
     files = Dir.glob(File.join(directory_path, '*.xml'))
     files = files.sort_by { |file| File.stat(file).mtime }
-    load_data_xml(files)
+    load_genetic_counseling_notes_and_findings(files)
   end
 end
 
@@ -2506,7 +2507,14 @@ def extract_fixtures(tables)
   end
 end
 
-def load_data_xml(files, options= {})
+def load_genetic_counseling_notes_and_findings(files, options= {})
+  puts 'hello'
+  source_system_id = nil
+  puts ENV['SOURCE_SYSTEM_ID']
+  if ENV['SOURCE_SYSTEM_ID'].present?
+    source_system_id_in_focus = ENV['SOURCE_SYSTEM_ID']
+  end
+
   options = { west_mrn: nil }.merge(options)
   GeneticCounselingNote.delete_all
   GeneticCounselingNoteFinding.delete_all
@@ -2528,6 +2536,7 @@ def load_data_xml(files, options= {})
     end
 
     genetic_counseling_notes.each_with_index do |genetic_counseling_note_from_file, i|
+
       # puts 'row'
       # puts i
       # puts 'patient_ir_id'
@@ -2558,6 +2567,10 @@ def load_data_xml(files, options= {})
       source_system_id = genetic_counseling_note_from_file.source_system_id
       # puts source_system_id
 
+      unless source_system_id_in_focus.blank?  || source_system_id_in_focus == source_system_id
+        next
+      end
+
       # puts 'row'
       # puts i
       # puts 'encounter_start_date_key'
@@ -2569,16 +2582,15 @@ def load_data_xml(files, options= {})
       # puts 'encounter_start_date_key'
       note_text = genetic_counseling_note_from_file.note_text
       # puts note_text
-      # if source_system_id == '3420954653'
-        genetic_counseling_note = GeneticCounselingNote.new
-        genetic_counseling_note.patient_ir_id = patient_ir_id
-        genetic_counseling_note.west_mrn = west_mrn
-        genetic_counseling_note.source_system_name = source_system_name
-        genetic_counseling_note.source_system_id = source_system_id
-        genetic_counseling_note.encounter_start_date_key = encounter_start_date_key
-        genetic_counseling_note.note_text = note_text
-        genetic_counseling_note.save!
-      # end
+
+      genetic_counseling_note = GeneticCounselingNote.new
+      genetic_counseling_note.patient_ir_id = patient_ir_id
+      genetic_counseling_note.west_mrn = west_mrn
+      genetic_counseling_note.source_system_name = source_system_name
+      genetic_counseling_note.source_system_id = source_system_id
+      genetic_counseling_note.encounter_start_date_key = encounter_start_date_key
+      genetic_counseling_note.note_text = note_text
+      genetic_counseling_note.save!
     end
   end
 
@@ -2594,17 +2606,24 @@ def load_data_xml(files, options= {})
 
       if augered_text.match?(/\bpositive\b/i) || augered_text.match?(/\b(VUS)\b/i)
         puts 'we have a positive'
-        if augered_text.match?(/\bNo variants identified\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/\bNo variants identified\b/i)
-        elsif augered_text.match?(/\bNo mutation found\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/\bNo mutation found\b/i)
+        if augered_text.match?(/\bNo\s*variant(?:s)?\s*identified\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*variant(?:s)?\s*identified\b)/i)
+        elsif augered_text.match?(/\bNo\s*variant(?:s)?\s*found\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*variant(?:s)?\s*found\b)/i)
+        elsif augered_text.match?(/\bNo\s*variant(?:s)?\s*detected\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*variant(?:s)?\s*detected\b)/i)
+        elsif augered_text.match?(/\bNo\s*mutation(?:s)?\s*identified\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*mutation(?:s)?\s*identified\b)/i)
+        elsif augered_text.match?(/(?=\s*No\s*mutation(?:s)?\s*found(?:)*\s*)/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutation(?:s)?\s*found(?:)*\s*)/i)
+        elsif augered_text.match?(/\bNo\s*mutation(?:s)?\s*detected\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNo\s*mutation(?:s)?\s*detected\b)/i)
         elsif augered_text.match?(/\bNegative\b/i)
-          positive_augered_text, negative_augered_text = augered_text.split(/\bNegative\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\bNegative\b)/i)
         else
           positive_augered_text = augered_text
           negative_augered_text = nil
         end
-
         matched_genes = match_genes(genes, positive_augered_text)
         if matched_genes.any?
           matched_genes.each do |matched_gene|
