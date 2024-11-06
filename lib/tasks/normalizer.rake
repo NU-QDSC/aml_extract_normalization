@@ -341,6 +341,15 @@ namespace :normalizer do
     worksheet[1][11].change_contents(ngs_pathology_case.note_text) # note text
     workbook.write(fixtures_path.join("files", "#{name.humanize.titleize}.xlsx"))
   end
+
+  # bundle exec rake normalizer:load_genetic_counseling_notes
+  desc "Load Genetic Counseling Notes"
+  task(load_genetic_counseling_notes: :environment) do |t, args|
+    directory_path = 'lib/setup/data/genetic_counseling_notes/'
+    files = Dir.glob(File.join(directory_path, '*.xml'))
+    files = files.sort_by { |file| File.stat(file).mtime }
+    load_data_xml(files)
+  end
 end
 
 def load_pathology_cases(files, options= {})
@@ -597,6 +606,41 @@ def extract_between_regular_expressions_or_empty_newline(text, start_marker, end
     extraction = extract_between_regular_expression_and_empty_newline(text, start_marker)
   end
   extraction
+end
+
+def extract_accross_lines_between_regular_expressions(text, start_marker, end_marker)
+  return text.strip if start_marker.nil? && end_marker.nil?
+
+  if start_marker && end_marker
+    # Find the start match
+    start_match = text.match(start_marker)
+    return "" unless start_match
+
+    # Get the position right after the start match
+    start_pos = start_match.end(0)
+
+    # Find the end match, but only in the text after the start match
+    remaining_text = text[start_pos..-1]
+    end_match = remaining_text.match(end_marker)
+
+    if end_match
+      # Extract text between the end of start_marker and start of end_marker
+      extraction = remaining_text[0...end_match.begin(0)]
+    else
+      # If no end marker is found, take all remaining text
+      extraction = remaining_text
+    end
+  elsif start_marker
+    # If only start marker is provided, take everything after it
+    match = text.match(start_marker)
+    extraction = match ? text[match.end(0)..-1] : ""
+  else
+    # If only end marker is provided, take everything before it
+    match = text.match(end_marker)
+    extraction = match ? text[0...match.begin(0)] : text
+  end
+
+  extraction.strip
 end
 
 def determine_version_ngs_pathology_case_cerner_central(note_text, classification_versions)
@@ -2423,6 +2467,14 @@ def match_gene?(genes, line)
   end
 end
 
+def match_genes(genes, text)
+  matched_genes = []
+  if text.present?
+    matched_genes = genes.select { |gene| text.match?(Regexp.new("\\b#{gene}\\b", Regexp::IGNORECASE)) }
+  end
+  matched_genes
+end
+
 def find_classifications(ngs_pathology_case, classification_version)
   found_classifications = []
   ngs_pathology_case.note_text.split("\n").each do |line|
@@ -2451,5 +2503,173 @@ def extract_fixtures(tables)
         hash
       }.to_yaml
     end
+  end
+end
+
+def load_data_xml(files, options= {})
+  options = { west_mrn: nil }.merge(options)
+  GeneticCounselingNote.delete_all
+  GeneticCounselingNoteFinding.delete_all
+  genes = Gene.all.map(&:hgnc_symbol)
+  files.each do |file|
+    genetic_counseling_note_handler = Parsers::GeneticCounselingNoteHandler.new
+    File.open(file) do |file|
+      parser = Nokogiri::XML::SAX::Parser.new(genetic_counseling_note_handler)
+      parser.parse(file)
+    end
+
+    genetic_counseling_notes = []
+    if !options[:west_mrn].present?
+      puts 'all baby'
+      genetic_counseling_notes =  genetic_counseling_note_handler.genetic_counseling_notes
+    else
+      puts 'in clover'
+      genetic_counseling_notes = genetic_counseling_note_handler.genetic_counseling_notes.select { |genetic_counseling_note| genetic_counseling_note.west_mrn ==  options[:west_mrn] }
+    end
+
+    genetic_counseling_notes.each_with_index do |genetic_counseling_note_from_file, i|
+      # puts 'row'
+      # puts i
+      # puts 'patient_ir_id'
+      patient_ir_id = genetic_counseling_note_from_file.patient_ir_id
+      # puts patient_ir_id
+
+      # puts 'row'
+      # puts i
+      # puts 'west_mrn'
+      west_mrn = genetic_counseling_note_from_file.west_mrn
+      # puts west_mrn
+
+      # puts 'row'
+      # puts i
+      # puts 'source_system_name'
+      source_system_name = genetic_counseling_note_from_file.source_system_name
+      # puts source_system_name
+
+      # puts 'row'
+      # puts i
+      # puts 'source_system_table'
+      source_system_table = genetic_counseling_note_from_file.source_system_table
+      # puts source_system_table
+
+      # puts 'row'
+      # puts i
+      # puts 'source_system_id'
+      source_system_id = genetic_counseling_note_from_file.source_system_id
+      # puts source_system_id
+
+      # puts 'row'
+      # puts i
+      # puts 'encounter_start_date_key'
+      encounter_start_date_key = genetic_counseling_note_from_file.encounter_start_date_key
+      # puts encounter_start_date_key
+
+      # puts 'row'
+      # puts i
+      # puts 'encounter_start_date_key'
+      note_text = genetic_counseling_note_from_file.note_text
+      # puts note_text
+      # if source_system_id == '3420954653'
+        genetic_counseling_note = GeneticCounselingNote.new
+        genetic_counseling_note.patient_ir_id = patient_ir_id
+        genetic_counseling_note.west_mrn = west_mrn
+        genetic_counseling_note.source_system_name = source_system_name
+        genetic_counseling_note.source_system_id = source_system_id
+        genetic_counseling_note.encounter_start_date_key = encounter_start_date_key
+        genetic_counseling_note.note_text = note_text
+        genetic_counseling_note.save!
+      # end
+    end
+  end
+
+  GeneticCounselingNote.all.each do |genetic_counseling_note|
+    start_marker = Regexp.new('\.*Test Results\:\.*', Regexp::IGNORECASE)
+    end_makrer = Regexp.new('\.*Interpretation\:\.*', Regexp::IGNORECASE)
+    augered_text = extract_accross_lines_between_regular_expressions(genetic_counseling_note.note_text, start_marker, end_makrer)
+    if !augered_text.blank?
+      puts 'here is the augered_text'
+      puts augered_text
+      puts 'here is the source_system_id'
+      puts genetic_counseling_note.source_system_id
+
+      if augered_text.match?(/\bpositive\b/i) || augered_text.match?(/\b(VUS)\b/i)
+        puts 'we have a positive'
+        if augered_text.match?(/\bNo variants identified\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/\bNo variants identified\b/i)
+        elsif augered_text.match?(/\bNo mutation found\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/\bNo mutation found\b/i)
+        elsif augered_text.match?(/\bNegative\b/i)
+          positive_augered_text, negative_augered_text = augered_text.split(/\bNegative\b/i)
+        else
+          positive_augered_text = augered_text
+          negative_augered_text = nil
+        end
+
+        matched_genes = match_genes(genes, positive_augered_text)
+        if matched_genes.any?
+          matched_genes.each do |matched_gene|
+            genetic_counseling_note_finding = GeneticCounselingNoteFinding.new
+            genetic_counseling_note_finding.genetic_counseling_note_id = genetic_counseling_note.id
+            genetic_counseling_note_finding.raw_finding = positive_augered_text
+            genetic_counseling_note_finding.gene = matched_gene
+            genetic_counseling_note_finding.variant_name = nil
+            genetic_counseling_note_finding.hgvs_c = nil
+            genetic_counseling_note_finding.hgvs_p = nil
+            genetic_counseling_note_finding.status = 'positive'
+            genetic_counseling_note_finding.save!
+          end
+        end
+
+        if negative_augered_text.present?
+          matched_genes = match_genes(genes, negative_augered_text)
+          if matched_genes.any?
+            matched_genes.each do |matched_gene|
+              genetic_counseling_note_finding = GeneticCounselingNoteFinding.new
+              genetic_counseling_note_finding.genetic_counseling_note_id = genetic_counseling_note.id
+              genetic_counseling_note_finding.raw_finding = negative_augered_text
+              genetic_counseling_note_finding.gene = matched_gene
+              genetic_counseling_note_finding.variant_name = nil
+              genetic_counseling_note_finding.hgvs_c = nil
+              genetic_counseling_note_finding.hgvs_p = nil
+              genetic_counseling_note_finding.status = 'negative'
+              genetic_counseling_note_finding.save!
+            end
+          end
+        end
+      else
+        puts 'before the storm'
+        matched_genes = match_genes(genes, augered_text)
+        if matched_genes.any?
+          matched_genes.each do |matched_gene|
+            genetic_counseling_note_finding = GeneticCounselingNoteFinding.new
+            genetic_counseling_note_finding.genetic_counseling_note_id = genetic_counseling_note.id
+            genetic_counseling_note_finding.raw_finding = augered_text
+            genetic_counseling_note_finding.gene = matched_gene
+            genetic_counseling_note_finding.variant_name = nil
+            genetic_counseling_note_finding.hgvs_c = nil
+            genetic_counseling_note_finding.hgvs_p = nil
+            genetic_counseling_note_finding.status = 'negative'
+            genetic_counseling_note_finding.save!
+          end
+        else
+          if augered_text.match?(/\bNo variants identified\b/i) || augered_text.match?(/\bNo mutation found\b/i) || augered_text.match?(/\bNegative\b/i)
+            genetic_counseling_note_finding = GeneticCounselingNoteFinding.new
+            genetic_counseling_note_finding.genetic_counseling_note_id = genetic_counseling_note.id
+            genetic_counseling_note_finding.raw_finding = augered_text
+            genetic_counseling_note_finding.gene = nil
+            genetic_counseling_note_finding.variant_name = nil
+            genetic_counseling_note_finding.hgvs_c = nil
+            genetic_counseling_note_finding.hgvs_p = nil
+            genetic_counseling_note_finding.status = 'negative'
+            genetic_counseling_note_finding.save!
+          end
+        end
+      end
+    else
+      puts 'no luck'
+      puts 'here is the source_system_id'
+      puts genetic_counseling_note.source_system_id
+    end
+    puts '---------------------------------'
   end
 end
