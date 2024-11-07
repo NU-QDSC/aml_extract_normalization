@@ -2596,8 +2596,8 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
 
   GeneticCounselingNote.all.each do |genetic_counseling_note|
     start_marker = Regexp.new('\.*Test Results\:\.*', Regexp::IGNORECASE)
-    end_makrer = Regexp.new('\.*Interpretation\:\.*', Regexp::IGNORECASE)
-    augered_text = extract_accross_lines_between_regular_expressions(genetic_counseling_note.note_text, start_marker, end_makrer)
+    end_marker = Regexp.new('\.*Interpretation\:\.*', Regexp::IGNORECASE)
+    augered_text = extract_accross_lines_between_regular_expressions(genetic_counseling_note.note_text, start_marker, end_marker)
 
     if !augered_text.blank?
       augered_text.gsub!(/^[[:space:]]+|[[:space:]]+$/, '')
@@ -2605,6 +2605,7 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
       puts augered_text
       puts 'here is the source_system_id'
       puts genetic_counseling_note.source_system_id
+
       if augered_text.match?(/^\s*positive:?\s*/i) || augered_text.match?(/\b(VUS)\b/i)
         puts 'we have a positive'
         if augered_text.match?(/(?=\s*No\s*variants?\s*identified:?\b)/i)
@@ -2709,9 +2710,89 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
         end
       end
     else
-      puts 'no luck'
       puts 'here is the source_system_id'
       puts genetic_counseling_note.source_system_id
+      # start_marker = Regexp.new('Variants\s*of\s*Uncertain\s*Significance\s*\(VUS\):', Regexp::IGNORECASE)
+      start_marker = Regexp.new('\s*Test results\s*')
+      end_marker = Regexp.new('\s{3,}')
+      augered_text = extract_accross_lines_between_regular_expressions(genetic_counseling_note.note_text, start_marker, end_marker)
+
+      if !augered_text.blank?
+        puts 'we caught a new guy!'
+        puts 'here is the augered_text'
+        puts augered_text
+
+        if augered_text.match?(/(?=\s*Negative:?\b)/i)
+          puts 'hello in the place 1'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Negative:?\b)/i, 2)
+
+          if positive_augered_text.present?  && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
+        elsif augered_text.match?(/(?=\s*No\s*mutations?\s*found:?\b)/i)
+          puts 'hello in the place 2'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutations?\s*found:?\b)/i, 2)
+          if positive_augered_text.present?  && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
+        elsif augered_text.match?(/(?=\s*No\s*variants?\s*identified:?\b)/i)
+          puts 'hello in the place 2'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*variants?\s*identified:?\b)/i, 2)
+          if positive_augered_text.present?  && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
+        else
+          positive_augered_text = augered_text
+          negative_augered_text = nil
+        end
+        if !positive_augered_text.blank?
+          matched_genes = match_genes(genes, positive_augered_text)
+          if matched_genes.any?
+            matched_genes.each do |matched_gene|
+              genetic_counseling_note_finding = GeneticCounselingNoteFinding.new
+              genetic_counseling_note_finding.genetic_counseling_note_id = genetic_counseling_note.id
+              genetic_counseling_note_finding.raw_finding = positive_augered_text
+              genetic_counseling_note_finding.gene = matched_gene
+              genetic_counseling_note_finding.variant_name = nil
+              genetic_counseling_note_finding.hgvs_c = nil
+              genetic_counseling_note_finding.hgvs_p = nil
+              genetic_counseling_note_finding.status = 'positive'
+              genetic_counseling_note_finding.save!
+            end
+          end
+        end
+        if !negative_augered_text.blank?
+          matched_genes = match_genes(genes, negative_augered_text)
+          if matched_genes.any?
+            matched_genes.each do |matched_gene|
+              genetic_counseling_note_finding = GeneticCounselingNoteFinding.new
+              genetic_counseling_note_finding.genetic_counseling_note_id = genetic_counseling_note.id
+              genetic_counseling_note_finding.raw_finding = negative_augered_text
+              genetic_counseling_note_finding.gene = matched_gene
+              genetic_counseling_note_finding.variant_name = nil
+              genetic_counseling_note_finding.hgvs_c = nil
+              genetic_counseling_note_finding.hgvs_p = nil
+              genetic_counseling_note_finding.status = 'negative'
+              genetic_counseling_note_finding.save!
+            end
+          else
+            genetic_counseling_note_finding = GeneticCounselingNoteFinding.new
+            genetic_counseling_note_finding.genetic_counseling_note_id = genetic_counseling_note.id
+            genetic_counseling_note_finding.raw_finding = negative_augered_text
+            genetic_counseling_note_finding.gene = nil
+            genetic_counseling_note_finding.variant_name = nil
+            genetic_counseling_note_finding.hgvs_c = nil
+            genetic_counseling_note_finding.hgvs_p = nil
+            genetic_counseling_note_finding.status = 'negative'
+            genetic_counseling_note_finding.save!
+          end
+        end
+      else
+        puts 'no luck'
+      end
     end
     puts '---------------------------------'
   end
