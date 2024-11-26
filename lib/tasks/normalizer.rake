@@ -2606,7 +2606,7 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
       puts 'here is the source_system_id'
       puts genetic_counseling_note.source_system_id
 
-      if augered_text.match?(/^\s*positive:?\s*/i) || augered_text.match?(/\b(VUS)\b/i)
+      if augered_text.match?(/^\s*positive:?\s*/i) || augered_text.match?(/\b(VUS)\b/i) || augered_text.match?(/\bVariant of uncertain significance\b/i)
         puts 'we have a positive'
         if augered_text.match?(/(?=\s*No\s*variants?\s*identified:?\b)/i)
           puts 'hello in the place 1'
@@ -2722,16 +2722,16 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
         puts 'here is the augered_text'
         puts augered_text
 
-        if augered_text.match?(/(?=\s*Negative:?\b)/i)
-          puts 'hello in the place 1'
-          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Negative:?\b)/i, 2)
+        if augered_text.match?(/(?=^\s*Negative:?\b)/i)
+          puts 'hello in the place 6'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=^\s*Negative:?\b)/i, 2)
 
-          if positive_augered_text.present?  && negative_augered_text.nil?
+          if positive_augered_text.present? && negative_augered_text.nil?
             negative_augered_text = positive_augered_text
             positive_augered_text = nil
           end
         elsif augered_text.match?(/(?=\s*No\s*mutations?\s*found:?\b)/i)
-          puts 'hello in the place 2'
+          puts 'hello in the place 1'
           positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*No\s*mutations?\s*found:?\b)/i, 2)
           if positive_augered_text.present?  && negative_augered_text.nil?
             negative_augered_text = positive_augered_text
@@ -2744,10 +2744,48 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
             negative_augered_text = positive_augered_text
             positive_augered_text = nil
           end
+        elsif augered_text.match?(/(?=\s*Ambry Genetics:?\b)/i)
+          puts 'hello in the place 3'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Ambry Genetics:?\b)/i, 2)
+          if positive_augered_text.present?  && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
+        elsif augered_text.match?(/(?=\s*Ambry panel:?\b)/i)
+          puts 'hello in the place 4'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Ambry panel:?\b)/i, 2)
+          if positive_augered_text.present?  && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
+        elsif augered_text.match?(/(?=\s*Ambry Genetics CustomNext Cancer Panel:?\b)/i)
+          puts 'hello in the place 5'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Ambry Genetics CustomNext Cancer Panel:?\b)/i, 2)
+          if positive_augered_text.present?  && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
+        elsif augered_text.match?(/(?=\s*Invitae Custom Hereditary Cancer Panel:?\b)/i)
+          puts 'hello in the place 5'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Invitae Custom Hereditary Cancer Panel:?\b)/i, 2)
+          if positive_augered_text.present?  && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
+        elsif augered_text.match?(/(?=\s*Negative:?\b)/i)
+          puts 'hello in the place 6'
+          positive_augered_text, negative_augered_text = augered_text.split(/(?=\s*Negative:?\b)/i, 2)
+
+          if positive_augered_text.present? && negative_augered_text.nil?
+            negative_augered_text = positive_augered_text
+            positive_augered_text = nil
+          end
         else
+          puts 'ugh'
           positive_augered_text = augered_text
           negative_augered_text = nil
         end
+        puts 'ugh more'
         if !positive_augered_text.blank?
           matched_genes = match_genes(genes, positive_augered_text)
           if matched_genes.any?
