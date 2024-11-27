@@ -38,4 +38,10 @@ describe 'rake normalizer:load_ngs_pathology_cases_and_findings' do
     invoke_task(case_name)
     expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
+
+  it 'loads the FusionPlex_Solid_Tumor_Next_Generation_S_one_simple_fusion report', focus: true do
+    case_name = 'fusionplex_solid_tumor_next_generation_s_one_simple_fusion'
+    invoke_task(case_name)
+    expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
+  end
 end

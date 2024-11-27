@@ -280,10 +280,10 @@ namespace :normalizer do
     extract_fixtures(tables)
   end
 
-  # bundle exec rake normalizer:append_ngs_pathology_fixtures ACCESSION_NBR=11AB-1111111 NAME=next_pathology_example
-  #for testing we are using NAME=pan_heme_ngs_panel_none_identified and ACCESSION_NBR=24NM-009D00620
+  # bundle exec rake normalizer:append_ngs_pathology_fixtures ACCESSION_NBR=00NM-000000000 NAME=fusionplex_solid_tumor_next_generation_s_one_simple_fusion
+  #for testing we are using NAME=fusionplex_solid_tumor_next_generation_s_one_simple_fusion and ACCESSION_NBR=00NM-000000000
   desc "appending NGS Pathology data to fixtures"
-  task :append_ngs_pathology_fixtures => :environment do #expects case and findings with the given accession number already exist
+  task :append_ngs_pathology_fixtures => :environment do #expects case and findings with the given accession 22NM-080D00231
     require 'rubyXL'
     require 'rubyXL/convenience_methods/cell'
     require 'rubyXL/convenience_methods/workbook'
@@ -467,7 +467,7 @@ def load_ngs_pathology_cases(files, options= {})
        'source system name' => 2,
        'source system id' => 3,
        'accession nbr formatted' => 4,
-       'accessioned datetime' => 5,
+       'accessioned date key' => 5,
        'case collect date key' => 6,
        'group name' => 7,
        'group desc' => 8,
@@ -484,7 +484,7 @@ def load_ngs_pathology_cases(files, options= {})
         ngs_pathology_case.source_system_name = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['source system name']]
         ngs_pathology_case.source_system_id = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['source system id']]
         ngs_pathology_case.accession_nbr_formatted = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['accession nbr formatted']]
-        ngs_pathology_case.accessioned_datetime = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['accessioned datetime']]
+        ngs_pathology_case.accessioned_date_key = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['accessioned date key']]
         ngs_pathology_case.case_collect_date_key = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['case collect date key']]
         ngs_pathology_case.group_name = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['group name']]
         ngs_pathology_case.group_desc = ngs_pathology_cases.sheet(0).row(i)[ngs_pathology_case_map['group desc']]
@@ -667,6 +667,93 @@ def load_ngs_pathology_findings
     puts ngs_pathology_case.accession_nbr_formatted
     puts ngs_pathology_case.group_desc
     case ngs_pathology_case.group_desc
+    when 'FusionPlex Solid Tumor Next Generation S'
+      puts 'Extracting Fusion...'
+
+      # next step: address the following case which is causing issues.
+      # Fusion Breakpoints
+      # VIM::NTRK3
+      # (ex8::ex14) chr10:17277888,chr15:88576276
+
+      # Fusion Breakpoints    - need to address this as well
+      # EML4(ex2)::NTRK3(ex14) chr2:42472827,chr15:88576276
+
+      # also need to deal with:
+      # gene:gene2 (exon 10)
+
+      #think about common scenarios, create one file for each and then use testing framwork to test.
+
+      # check if we catch the following case:
+      # ZFTA (previously C11orf95)(ex3)::RELA(ex2) chr11:63532340,chr11:65429676
+
+      start_marker = Regexp.new('^\s*(Results|Result)\s*', Regexp::IGNORECASE)
+      end_marker = Regexp.new('^\s*(Comment|Assay\s*Description)\s*', Regexp::IGNORECASE)
+
+      section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, start_marker, end_marker)
+
+      puts 'Begin section_text:'
+      puts section_text
+      puts 'End section_text'
+
+      fusion_genes = nil
+      fusion_breakpoints = nil
+      raw_finding = nil
+      multiline = false
+
+      section_text.split("\n").each do |line|
+        if (genes.detect { |gene| line.match? Regexp.new("^\s*#{gene}:", Regexp::IGNORECASE) }) || multiline
+          if !multiline
+            fusion_genes, fusion_breakpoints = line.split(' ')
+            raw_finding = line
+          else
+            fusion_exons, fusion_breakpoints = line.split(' ')
+            raw_finding += line
+            puts 'fusion_exons_start'
+            puts fusion_exons
+            puts 'fusion_exons_end'
+            puts 'fusion_breakpoints_start'
+            puts fusion_breakpoints
+            puts 'fusion_breakpoints_end'
+            multiline = false
+          end
+
+          if fusion_breakpoints.blank? || !fusion_breakpoints.match?(/chr/i)
+            fusion_genes,_ = line.split(' ')
+            multiline = true
+            next
+          else
+            fusion_genes = fusion_genes.gsub('::',':')
+            gene, fusion_gene = fusion_genes.split(':')
+            gene_position, fusion_gene_position = fusion_breakpoints.split(',')
+          end
+
+          ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+          ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+          ngs_pathology_case_finding.raw_finding = raw_finding
+          ngs_pathology_case_finding.significance = nil
+          ngs_pathology_case_finding.status = 'positive'
+          ngs_pathology_case_finding.variant_type = 'Fusion'
+
+          ngs_pathology_case_finding.gene = gene
+          ngs_pathology_case_finding.fusion_gene = fusion_gene
+          ngs_pathology_case_finding.gene_position = gene_position
+          ngs_pathology_case_finding.fusion_gene_position = fusion_gene_position
+
+          ngs_pathology_case_finding.variant_name = fusion_genes
+
+          ngs_pathology_case_finding.save!
+
+          #troubleshooting logs
+          # gene_fusion_info = {
+          #   :gene => gene,
+          #   :fusion_gene => fusion_gene,
+          #   :gene_position => gene_position,
+          #   :fusion_gene_position => fusion_gene_position
+          # }
+          # pp gene_fusion_info
+
+        end
+      end
     when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel', 'Comprehensive Cancer NGS Panel (NMH/LFH)', 'Lymphoma Cancer NGS Panel (NMH/LFH)'
       classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
                                                                { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\s*', Regexp::IGNORECASE)},
@@ -893,28 +980,6 @@ def load_ngs_pathology_findings
           ngs_pathology_case_finding.save!
         end
       end
-    when 'FusionPlex Solid Tumor Next Generation S'
-      start_marker = Regexp.new('^\s*Results\s*', Regexp::IGNORECASE)
-      end_marker = Regexp.new('^\s*(Comment|Assay\s*Description)\s*', Regexp::IGNORECASE)
-
-      section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, start_marker, end_marker)
-
-
-      section_text_known = section_texts.detect { |section_text| section_text[:classification][:significance] == 'known or possible' || section_text[:classification][:significance] == 'known'  }
-
-      if section_text_known && section_text_known[:section_text].match?(germline_classification[:marker])
-      germline_in_known_classification = true
-      else
-      classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
-                germline_classification,
-                { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\^\s*', Regexp::IGNORECASE)},
-                { significance: 'known or possible', marker: Regexp.new('^\s*Variants of known or potential clinical significance\s*', Regexp::IGNORECASE)},
-                { significance: 'possible', marker: Regexp.new('^\s*Variants of possible clinical significance\^\s*', Regexp::IGNORECASE)},
-                { significance: 'unknown', marker: Regexp.new('^\s*Variants of Unknown (Clinical )?Significance(\^)?\s*', Regexp::IGNORECASE) }] }
-      found_classifications = find_classifications(ngs_pathology_case, classification_version)
-      germline_in_known_classification = false
-      end
-
     when 'Myeloid Neoplasms NGS Panel'
       classification_version = { version: 1, classifications: [ { significance: 'known', marker: Regexp.new('^*\sThese variants of known clinical significance', Regexp::IGNORECASE)},
                                                                               { significance: 'possible', marker: Regexp.new('^*\sThese variants of possible clinical significance', Regexp::IGNORECASE)},
