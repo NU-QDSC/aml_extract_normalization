@@ -1,0 +1,3 @@
+class DnaMethylationArrayPathologyCaseFinding < ApplicationRecord
+  belongs_to :dna_methylation_array_pathology_case
+end
