@@ -1,0 +1,38 @@
+---
+patient_ir_id: 111111
+west_mrn: '222222'
+source_system_name: clarity_west
+source_system_id: 333333
+accession_nbr_formatted: 11AB-1111111
+accessioned_datetime: '2024-01-01'
+case_collect_date_key: '2024-01-01'
+group_name: NGS PANEL
+group_desc: NGS Panel
+report_description: A sample NGS Panel
+section_description: Final Diagnosis
+note_text: "These are the multi-line notes of an example NGS Panel which contain findings."
+ngs_pathology_case_findings:
+- raw_finding: 'NGS Panel'
+  gene:
+  variant_name: Panel Name
+  variant_type: Genomic Signature
+  allelic_frequency:
+  transcript:
+  significance: genomic signature
+  status:
+  copy_number:
+  genomic_signature_result:
+  gene_exon:
+  fusion_gene_exon:
+- raw_finding: 'findings'
+  gene:
+  variant_name: A Finding
+  variant_type: Genomic Signature
+  allelic_frequency:
+  transcript:
+  significance: genomic signature
+  status:
+  copy_number:
+  genomic_signature_result:
+  gene_exon:
+  fusion_gene_exon:
