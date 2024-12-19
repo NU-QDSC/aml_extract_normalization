@@ -1,6 +1,8 @@
 # Ignore PHI Files
-spec/fixtures/files/*.xlsx
-spec/fixtures/*.yml
+spec/fixtures/ngs_pathology_cases/*.yml
+!spec/fixtures/ngs_pathology_cases/example_ngs_pathology_case.yml
+spec/fixtures/ngs_pathology_cases/files/*.xlsx
+!spec/fixtures/ngs_pathology_cases/files/Example Ngs Pathology Case.xlsx
 
 *.rbc
 capybara-*.html
