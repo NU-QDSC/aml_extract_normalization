@@ -161,3 +161,4 @@ fabric.properties
 /.idea/aml_extract_normalization.iml
 /.idea/misc.xml
 /.idea/modules.xml
+.idea/dataSources.xml
