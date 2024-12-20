@@ -1,57 +1,138 @@
-require 'csv'
+require 'net/http'
+require 'uri'
+require 'json'
+require 'cgi'
+
 namespace :normalizer do
   # bundle exec rake normalizer:load_vocabulary
-  desc "Load vocabulary"
+  desc "Load vocabulary from HGNC REST API"
   task(load_vocabulary: :environment) do |t, args|
+    class HGNCDownloader
+      BASE_URL = 'https://rest.genenames.org'
+      BATCH_SIZE = 100
+
+      def initialize
+        @uri = URI.parse(BASE_URL)
+        @http = Net::HTTP.new(@uri.host, @uri.port)
+        @http.use_ssl = true
+      end
+
+      def fetch_protein_coding_genes
+        genes = []
+        start = 0
+
+        path = "/fetch/locus_group/#{CGI.escape('protein-coding gene')}"
+        response = make_request(path)
+        return [] if response.nil?
+
+        data = JSON.parse(response.body)
+        total_genes = data['response']['numFound']
+        puts "Found #{total_genes} approved protein-coding genes"
+
+        genes.concat(data['response']['docs'])
+        start += BATCH_SIZE
+
+        while genes.length < total_genes
+          path = "/fetch/locus_group/#{CGI.escape('protein-coding gene')}?start=#{start}"
+          response = make_request(path)
+          break if response.nil?
+
+          batch = JSON.parse(response.body)['response']['docs']
+          break if batch.empty?
+
+          genes.concat(batch)
+          puts "Retrieved #{genes.length} of #{total_genes} genes..."
+          start += BATCH_SIZE
+        end
+
+        genes.select! { |gene| gene['status'] == 'Approved' }
+        puts "Found #{genes.length} approved genes after filtering"
+
+        genes
+      end
+
+      private
+
+      def make_request(path)
+        request = Net::HTTP::Get.new(path, { 'Accept' => 'application/json' })
+
+        begin
+          response = @http.request(request)
+
+          if response.code != '200'
+            puts "Error: #{response.code} - #{response.body}"
+            return nil
+          end
+
+          response
+        rescue => e
+          puts "Request failed: #{e.message}"
+          nil
+        end
+      end
+    end
+
+    puts "Cleaning existing data..."
     Gene.delete_all
     GeneSynonym.delete_all
-    hgnc_genes = CSV.new(File.open('lib/setup/vocabulary/gene_with_protein_product.txt'), headers: true, col_sep: "\t", return_headers: false,  quote_char: "\"")
+
+    puts "Fetching genes from HGNC..."
+    downloader = HGNCDownloader.new
+    genes = downloader.fetch_protein_coding_genes
+
+    if genes.empty?
+      puts "No genes were retrieved!"
+      exit 1
+    end
+
+    puts "\nProcessing gene data..."
+    genes_with_details = []
     synonyms_by_gene_index = {}
-    genes = Gene.insert_all!(hgnc_genes.map.with_index{ |hgnc_gene, index|
-      synonyms = Array(hgnc_gene['alias_symbol']&.split('|')&.map{ |alias_symbol| { synonym_name: alias_symbol, synonym_type: 'symbol' } })
-      synonyms += Array(hgnc_gene['alias_name']&.split('|')&.map{ |alias_name| { synonym_name: alias_name, synonym_type: 'name' } })
+
+    genes.each_with_index do |gene_details, index|
+      print "Processing gene #{index + 1} of #{genes.length}: #{gene_details['symbol']}\r"
+
+      synonyms = []
+      if gene_details['alias_symbol']&.is_a?(Array)
+        synonyms += gene_details['alias_symbol'].map { |alias_symbol|
+          { synonym_name: alias_symbol, synonym_type: 'symbol' }
+        }
+      end
+      if gene_details['alias_name']&.is_a?(Array)
+        synonyms += gene_details['alias_name'].map { |alias_name|
+          { synonym_name: alias_name, synonym_type: 'name' }
+        }
+      end
+
       synonyms_by_gene_index[index] = synonyms if synonyms.present?
 
-      {
-        hgnc_id: hgnc_gene['hgnc_id'],
-        hgnc_symbol: hgnc_gene['symbol'],
-        name: hgnc_gene['name'],
-        location: hgnc_gene['location'],
-        alias_symbol: hgnc_gene['alias_symbol'],
-        alias_name: hgnc_gene['alias_name'],
-        prev_symbol: hgnc_gene['prev_symbol'],
-        prev_name: hgnc_gene['prev_name'],
-        gene_group: hgnc_gene['gene_group']
+      genes_with_details << {
+        hgnc_id: gene_details['hgnc_id'],
+        hgnc_symbol: gene_details['symbol'],
+        name: gene_details['name'],
+        location: gene_details['location'],
+        alias_symbol: gene_details['alias_symbol']&.join('|'),
+        alias_name: gene_details['alias_name']&.join('|'),
+        prev_symbol: gene_details['prev_symbol']&.join('|'),
+        prev_name: gene_details['prev_name']&.join('|'),
+        gene_group: gene_details['gene_group']&.join('|')
       }
-    }).to_a
+    end
+    puts "\n"
 
-    GeneSynonym.insert_all!(synonyms_by_gene_index.map{ |gene_index, synonyms|
-      synonyms.map{ |synonym| synonym.merge({ gene_id: genes[gene_index]['id'] }) }
-    }.flatten)
-    synonyms_by_gene_index = {}
-    genes = Gene.insert_all!(hgnc_genes.map.with_index{ |hgnc_gene, index|
-      synonyms = Array(hgnc_gene['alias_symbol']&.split('|')&.map{ |alias_symbol| { synonym_name: alias_symbol, synonym_type: 'symbol' } })
-      synonyms += Array(hgnc_gene['alias_name']&.split('|')&.map{ |alias_name| { synonym_name: alias_name, synonym_type: 'name' } })
-      synonyms_by_gene_index[index] = synonyms if synonyms.present?
+    puts "Inserting #{genes_with_details.length} genes into database..."
+    genes = Gene.insert_all!(genes_with_details).to_a
 
-      {
-        hgnc_id: hgnc_gene['hgnc_id'],
-        hgnc_symbol: hgnc_gene['symbol'],
-        name: hgnc_gene['name'],
-        location: hgnc_gene['location'],
-        alias_symbol: hgnc_gene['alias_symbol'],
-        alias_name: hgnc_gene['alias_name'],
-        prev_symbol: hgnc_gene['prev_symbol'],
-        prev_name: hgnc_gene['prev_name'],
-        gene_group: hgnc_gene['gene_group']
-      }
-    }).to_a
+    puts "Inserting synonyms..."
+    synonym_records = synonyms_by_gene_index.map do |gene_index, synonyms|
+      synonyms.map { |synonym| synonym.merge({ gene_id: genes[gene_index]['id'] }) }
+    end.flatten
 
-    GeneSynonym.insert_all!(synonyms_by_gene_index.map{ |gene_index, synonyms|
-      synonyms.map{ |synonym| synonym.merge({ gene_id: genes[gene_index]['id'] }) }
-    }.flatten)
+    GeneSynonym.insert_all!(synonym_records)
+
+    puts "Done! Loaded #{genes.length} genes and #{synonym_records.length} synonyms."
   end
-  
+
   # bundle exec rake normalizer:load_pathology_cases_and_findings
   desc "Load pathology cases and findings"
   task :load_pathology_cases_and_findings, [:west_mrn] => :environment do |t, args|
