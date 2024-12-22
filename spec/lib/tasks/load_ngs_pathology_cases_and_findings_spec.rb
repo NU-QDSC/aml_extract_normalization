@@ -27,6 +27,12 @@ describe 'rake normalizer:load_ngs_pathology_cases_and_findings' do
     expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
 
+  it 'loads the Nm Expanded Solid Tumor Ngs Panel pertinnt negatives with previous symbols report', :focus do
+    case_name = 'nm_expanded_solid_tumor_ngs_panel_pertinent_negative_gene_prev_symbol'
+    invoke_task(case_name)
+    expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
+  end
+
   it 'loads the Pan Heme Ngs Panel Found report', :focuss do
     case_name = 'pan_heme_ngs_panel_found'
     invoke_task(case_name)
@@ -44,7 +50,7 @@ describe 'rake normalizer:load_ngs_pathology_cases_and_findings' do
     invoke_task(case_name)
     expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
-  
+
   it 'loads the Fusionplex Solid Tumor Next Generation S report simple case', :focuss do
     case_name = 'FusionPlex_Solid_Tumor_Next_Generation_S_simple_case'
     invoke_task(case_name)

@@ -702,111 +702,110 @@ def load_ngs_pathology_findings
     puts ngs_pathology_case.group_desc
     case ngs_pathology_case.group_desc
     when 'FusionPlex Solid Tumor Next Generation S'
-    puts 'Extracting Fusion...'
+      puts 'Extracting Fusion...'
 
-    start_marker = Regexp.new('^\s*(Results|Result)\s*', Regexp::IGNORECASE)
-    end_marker = Regexp.new('^\s*(Comment|Assay\s*Description)\s*', Regexp::IGNORECASE)
+      start_marker = Regexp.new('^\s*(Results|Result)\s*', Regexp::IGNORECASE)
+      end_marker = Regexp.new('^\s*(Comment|Assay\s*Description)\s*', Regexp::IGNORECASE)
 
-    section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, start_marker, end_marker)
+      section_text = extract_between_regular_expressions(ngs_pathology_case.note_text, start_marker, end_marker)
 
-    puts 'Begin section_text:'
-    puts section_text
-    puts 'End section_text'
+      puts 'Begin section_text:'
+      puts section_text
+      puts 'End section_text'
 
-    # Approach 2 - more flexible
-    fusion_string_is_complete = true
-    fusion_string = ''
+      # Approach 2 - more flexible
+      fusion_string_is_complete = true
+      fusion_string = ''
 
-    section_text.split("\n").each do |line|
-      # if (genes.detect { |gene| line.match? Regexp.new("^\s*#{gene}:", Regexp::IGNORECASE) }) || !fusion_string_is_complete #original is faulty because sometimes you have gene and other characters before a colon
-      if (genes.detect { |gene| line.match? Regexp.new("^\s*#{gene}.*?:", Regexp::IGNORECASE) }) || !fusion_string_is_complete #original is faulty because sometimes you have gene and other characters before a colon
-        # Append current line to fusion string
-        fusion_string += line
-        # check if the fusion string spans multiple lines
-        if !line.match?(/chr/i)
-          fusion_string_is_complete = false
-          next
-        else
-          fusion_string_is_complete = true
-        end
-
-        if fusion_string_is_complete
-          raw_finding = fusion_string
-          # Remove new lines from multiline fusion_strings
-          fusion_string = fusion_string.gsub("\n","")
-          # Replace multiple spaces with a single space in ruby
-          fusion_string = fusion_string.gsub(/\s+/," ")
-          # Replace multiple colons with a single colon
-          fusion_string = fusion_string.gsub('::',':')
-          puts 'Fusion String Start'
-          puts fusion_string
-          puts 'Fusion String End'
-          # Extract fusion_breakpoints
-          gene_position, fusion_gene_position = fusion_string.scan(/(chr\d+:\d+|chr[XY]:\d+)/i).flatten
-          # Extract strings within parenthesis. Some of them contain single exons(e.g ex10) some contain both exons divided by a colon(ex10:ex12) some just need to be discarded
-          potential_exons = fusion_string.scan(/\(.*?\)/)
-          # Extracting the fusion portion of the string is now trivial. Simply remove all the parhentesis substrings.
-          # Extract portion of string containing fusion genes. Initially it will also contain exons
-          fusion_genes_substring = fusion_string.scan(/^.*?(?=chr.*)/i)[0]
-          # create an empty array for exons
-          extracted_exons = []
-          potential_exons.each do |potential_exon_substring|
-            # Remove parhentesis substrings from fusion_string
-            # Escape potential_exon_substring in case it contains special characters
-            fusion_genes_substring = fusion_genes_substring.gsub(potential_exon_substring, '')
-
-            # Extract exons
-            exons = potential_exon_substring.scan(/\s*ex.*?\d+/i)
-            extracted_exons.concat(exons.map(&:downcase))
+      section_text.split("\n").each do |line|
+        # if (genes.detect { |gene| line.match? Regexp.new("^\s*#{gene}:", Regexp::IGNORECASE) }) || !fusion_string_is_complete #original is faulty because sometimes you have gene and other characters before a colon
+        if (genes.detect { |gene| line.match? Regexp.new("^\s*#{gene}.*?:", Regexp::IGNORECASE) }) || !fusion_string_is_complete #original is faulty because sometimes you have gene and other characters before a colon
+          # Append current line to fusion string
+          fusion_string += line
+          # check if the fusion string spans multiple lines
+          if !line.match?(/chr/i)
+            fusion_string_is_complete = false
+            next
+          else
+            fusion_string_is_complete = true
           end
-          #remove extra spaces from fusion_genes_substring
-          fusion_genes = fusion_genes_substring.gsub(/\s+/,"")
-      
-          gene, fusion_gene = fusion_genes.split(':')
-          #If it found exons, extract them
-          puts 'Exons Extracted Before If Start'
-          puts extracted_exons
-          puts 'Exons Extracted Before If End'
-          if !extracted_exons.empty?
-            if extracted_exons.length != 2
-              puts 'Exons Extracted Start'
-              puts extracted_exons
-              puts 'Exons Extracted End'
-              # raise 'THERE WAS A PROBLEM EXTRACTING EXONS!'
-            else
-              puts 'Exons Extracted Start'
-              puts extracted_exons
-              puts 'Exons Extracted End'
-              gene_exon, fusion_gene_exon = extracted_exons
+
+          if fusion_string_is_complete
+            raw_finding = fusion_string
+            # Remove new lines from multiline fusion_strings
+            fusion_string = fusion_string.gsub("\n","")
+            # Replace multiple spaces with a single space in ruby
+            fusion_string = fusion_string.gsub(/\s+/," ")
+            # Replace multiple colons with a single colon
+            fusion_string = fusion_string.gsub('::',':')
+            puts 'Fusion String Start'
+            puts fusion_string
+            puts 'Fusion String End'
+            # Extract fusion_breakpoints
+            gene_position, fusion_gene_position = fusion_string.scan(/(chr\d+:\d+|chr[XY]:\d+)/i).flatten
+            # Extract strings within parenthesis. Some of them contain single exons(e.g ex10) some contain both exons divided by a colon(ex10:ex12) some just need to be discarded
+            potential_exons = fusion_string.scan(/\(.*?\)/)
+            # Extracting the fusion portion of the string is now trivial. Simply remove all the parhentesis substrings.
+            # Extract portion of string containing fusion genes. Initially it will also contain exons
+            fusion_genes_substring = fusion_string.scan(/^.*?(?=chr.*)/i)[0]
+            # create an empty array for exons
+            extracted_exons = []
+            potential_exons.each do |potential_exon_substring|
+              # Remove parhentesis substrings from fusion_string
+              # Escape potential_exon_substring in case it contains special characters
+              fusion_genes_substring = fusion_genes_substring.gsub(potential_exon_substring, '')
+
+              # Extract exons
+              exons = potential_exon_substring.scan(/\s*ex.*?\d+/i)
+              extracted_exons.concat(exons.map(&:downcase))
             end
+            #remove extra spaces from fusion_genes_substring
+            fusion_genes = fusion_genes_substring.gsub(/\s+/,"")
+
+            gene, fusion_gene = fusion_genes.split(':')
+            #If it found exons, extract them
+            puts 'Exons Extracted Before If Start'
+            puts extracted_exons
+            puts 'Exons Extracted Before If End'
+            if !extracted_exons.empty?
+              if extracted_exons.length != 2
+                puts 'Exons Extracted Start'
+                puts extracted_exons
+                puts 'Exons Extracted End'
+                # raise 'THERE WAS A PROBLEM EXTRACTING EXONS!'
+              else
+                puts 'Exons Extracted Start'
+                puts extracted_exons
+                puts 'Exons Extracted End'
+                gene_exon, fusion_gene_exon = extracted_exons
+              end
+            end
+
+            #write data to model
+            ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+            ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+            ngs_pathology_case_finding.raw_finding = fusion_string
+            ngs_pathology_case_finding.significance = nil
+            ngs_pathology_case_finding.status = 'positive'
+            ngs_pathology_case_finding.variant_type = 'Fusion'
+
+            ngs_pathology_case_finding.gene = gene
+            ngs_pathology_case_finding.fusion_gene = fusion_gene
+            ngs_pathology_case_finding.gene_position = gene_position
+            ngs_pathology_case_finding.fusion_gene_position = fusion_gene_position
+
+            ngs_pathology_case_finding.variant_name = fusion_genes
+
+            ngs_pathology_case_finding.gene_exon = gene_exon
+            ngs_pathology_case_finding.fusion_gene_exon = fusion_gene_exon
+
+            ngs_pathology_case_finding.save!
+
+            # Reset fusion string to blank
+            fusion_string = ''
           end
-
-          #write data to model
-          ngs_pathology_case_finding = NgsPathologyCaseFinding.new
-          ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
-          ngs_pathology_case_finding.raw_finding = fusion_string
-          ngs_pathology_case_finding.significance = nil
-          ngs_pathology_case_finding.status = 'positive'
-          ngs_pathology_case_finding.variant_type = 'Fusion'
-      
-          ngs_pathology_case_finding.gene = gene
-          ngs_pathology_case_finding.fusion_gene = fusion_gene
-          ngs_pathology_case_finding.gene_position = gene_position
-          ngs_pathology_case_finding.fusion_gene_position = fusion_gene_position
-
-          ngs_pathology_case_finding.variant_name = fusion_genes
-
-          ngs_pathology_case_finding.gene_exon = gene_exon
-          ngs_pathology_case_finding.fusion_gene_exon = fusion_gene_exon
-
-          ngs_pathology_case_finding.save!
-
-          # Reset fusion string to blank
-          fusion_string = ''
         end
       end
-    end
-
     when 'Pan-Heme NGS Panel', 'NM Expanded Solid Tumor NGS Panel', 'Comprehensive Cancer NGS Panel (NMH/LFH)', 'Lymphoma Cancer NGS Panel (NMH/LFH)'
       classification_version = { version: 1, classifications: [{ significance: 'genomic signature', marker: Regexp.new('^\s*Genomic Signature\s*', Regexp::IGNORECASE)},
                                                                { significance: 'known', marker: Regexp.new('^\s*Variants of known clinical significance\s*', Regexp::IGNORECASE)},
@@ -970,6 +969,7 @@ def load_ngs_pathology_findings
                     when 'Rearrangement'
                       parse_rearrangement(classification, ngs_pathology_case, subsection, genes)
                     when 'Pertinent Negative'
+                      genes = load_genes
                       parse_pertinent_negative(classification, ngs_pathology_case, subsection, genes)
                     when 'Germline'
                       parse_germline(classification, ngs_pathology_case, subsection[:subsection_text], genes)
@@ -2523,22 +2523,26 @@ def parse_pertinent_negative(classification, ngs_pathology_case, subsection, gen
     if pertinent_negative.match?(/^\s*\*No mutations were identified./)
       break
     else
-      ngs_pathology_case_finding = NgsPathologyCaseFinding.new
-      ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
-      ngs_pathology_case_finding.raw_finding = pertinent_negative
+      if match_gene?(genes, pertinent_negative)
+        ngs_pathology_case_finding = NgsPathologyCaseFinding.new
+        ngs_pathology_case_finding.ngs_pathology_case_id = ngs_pathology_case.id
+        ngs_pathology_case_finding.raw_finding = pertinent_negative
 
-      ngs_pathology_case_finding.significance = classification[:significance]
+        ngs_pathology_case_finding.significance = classification[:significance]
 
-      pertinent_negative = pertinent_negative.split(' ')
-      gene = variant_name = pertinent_negative.shift
-      status = pertinent_negative.join(' ')
+        pertinent_negative = pertinent_negative.split(' ')
+        gene = variant_name = pertinent_negative.shift
+        status = pertinent_negative.join(' ')
 
-      if gene.present? && gene.size <= 40
-        ngs_pathology_case_finding.gene = gene
-        ngs_pathology_case_finding.variant_name = variant_name
-        ngs_pathology_case_finding.status = status
-        ngs_pathology_case_finding.variant_type = subsection[:variant_type]
-        ngs_pathology_case_finding.save!
+        if gene.present? && gene.size <= 40
+          ngs_pathology_case_finding.gene = gene
+          ngs_pathology_case_finding.variant_name = variant_name
+          ngs_pathology_case_finding.status = status
+          ngs_pathology_case_finding.variant_type = subsection[:variant_type]
+          ngs_pathology_case_finding.save!
+        end
+      else
+        break
       end
     end
   end
@@ -2582,7 +2586,7 @@ end
 
 def match_gene?(genes, line)
   if line.present?
-    genes.any? { |gene| line.match?(Regexp.new("^\s*#{gene}", Regexp::IGNORECASE)) }
+    genes.any? { |gene| line.match?(Regexp.new("^\s*#{gene}\s+", Regexp::IGNORECASE)) }
   end
 end
 
@@ -2938,4 +2942,12 @@ def load_genetic_counseling_notes_and_findings(files, options= {})
     end
     puts '---------------------------------'
   end
+end
+
+def load_genes
+  genes = Gene.all.map do |gene|
+    prev_symbols = gene.prev_symbol&.split('|') || []
+    [gene.hgnc_symbol, *prev_symbols]
+  end.flatten.compact
+  genes
 end
