@@ -27,7 +27,7 @@ describe 'rake normalizer:load_ngs_pathology_cases_and_findings' do
     expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings
   end
 
-  it 'loads the Nm Expanded Solid Tumor Ngs Panel pertinnt negatives with previous symbols report', :focus do
+  it 'loads the Nm Expanded Solid Tumor Ngs Panel pertinent negatives with previous symbols report', :focus do
     case_name = 'nm_expanded_solid_tumor_ngs_panel_pertinent_negative_gene_prev_symbol'
     invoke_task(case_name)
     expect(case_name).to be_loaded_as_ngs_pathology_cases_and_findings

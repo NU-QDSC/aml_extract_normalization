@@ -133,19 +133,6 @@ namespace :normalizer do
     puts "Done! Loaded #{genes.length} genes and #{synonym_records.length} synonyms."
   end
 
-  # bundle exec rake normalizer:load_pathology_cases_and_findings
-  desc "Load pathology cases and findings"
-  task :load_pathology_cases_and_findings, [:west_mrn] => :environment do |t, args|
-    puts 'you need to care'
-    puts args[:west_mrn]
-    directory_path = 'lib/setup/data/normalization_method/llm/'
-    files = Dir.glob(File.join(directory_path, '*.xlsx'))
-    files = files.sort_by { |file| File.stat(file).mtime }
-
-    load_pathology_cases(files, west_mrn: args[:west_mrn], normalization_method: 'llm')
-    load_pathology_findings
-  end
-
   # export ACCESSION_NBR_FORMATTED=''
   # bundle exec rake normalizer:load_fish_pathology_cases_and_findings_regular_expression
   # bundle exec rake normalizer:normalize["fish regular expression"]
@@ -165,14 +152,14 @@ namespace :normalizer do
 
   # export ACCESSION_NBR_FORMATTED=''
   # bundle exec rake normalizer:load_cytogenetic_pathology_cases_and_findings_regular_expression
-  # bundle exec rake normalizer:normalize["cytogenetic regular expression"]
   desc "Load cytogenetic pathology cases and findings regular expression"
   task :load_cytogenetic_pathology_cases_and_findings_regular_expression, [:west_mrn] => :environment do |t, args|
     puts 'you need to care'
     # puts args[:west_mrn]
-    directory_path = Rails.application.credentials.nmedw[Rails.env.to_sym][:files]
-    directory_path = "#{directory_path}/STU00220340/"
-    files = Dir.glob(File.join(directory_path, 'Cytogenetic_pathology_karyotype*.xlsx'))
+    # directory_path = Rails.application.credentials.nmedw[Rails.env.to_sym][:files]
+    # directory_path = "#{directory_path}/STU00220340/"
+    directory_path = 'lib/setup/data/normalization_method/regular_expression/cytogenetics/'
+    files = Dir.glob(File.join(directory_path, 'Cytogenetic Pathology Case Karotypes*.xlsx'))
     files = files.sort_by { |file| File.stat(file).mtime }
 
     normalization_method = 'cytogenetic regular expression'
@@ -384,53 +371,6 @@ namespace :normalizer do
     files = Dir.glob(File.join(directory_path, '*.xml'))
     files = files.sort_by { |file| File.stat(file).mtime }
     load_genetic_counseling_notes_and_findings(files)
-  end
-end
-
-def load_pathology_cases(files, options= {})
-  puts 'hello'
-  accession_nbr_formatted = nil
-  puts ENV['ACCESSION_NBR_FORMATTED']
-  if ENV['ACCESSION_NBR_FORMATTED'].present?
-    accession_nbr_formatted = ENV['ACCESSION_NBR_FORMATTED']
-  end
-
-  PathologyCase.where(normalization_method: options[:normalization_method]).destroy_all
-  files.each do |file|
-    puts file
-    pathology_cases = Roo::Spreadsheet.open(file)
-    pathology_case_map = {
-       'west mrn' => 0,
-       'source system' => 1,
-       'pathology case key' => 2,
-       'pathology case source system id' => 3,
-       'accession nbr formatted' => 4,
-       'group desc' => 5,
-       'snomed code' => 6,
-       'snomed name' => 7,
-       'accessioned date key' => 8,
-       'section description'   => 9,
-       'note text' => 10
-    }
-
-    for i in 2..pathology_cases.sheet(0).last_row do
-      if accession_nbr_formatted.nil? || accession_nbr_formatted == pathology_cases.sheet(0).row(i)[pathology_case_map['accession nbr formatted']]
-        pathology_case = PathologyCase.new
-        pathology_case.west_mrn = pathology_cases.sheet(0).row(i)[pathology_case_map['west mrn']]
-        pathology_case.source_system = pathology_cases.sheet(0).row(i)[pathology_case_map['source system']]
-        pathology_case.pathology_case_key = pathology_cases.sheet(0).row(i)[pathology_case_map['pathology case key']]
-        pathology_case.pathology_case_source_system_id = pathology_cases.sheet(0).row(i)[pathology_case_map['pathology case source system id']]
-        pathology_case.accession_nbr_formatted = pathology_cases.sheet(0).row(i)[pathology_case_map['accession nbr formatted']]
-        pathology_case.group_desc = pathology_cases.sheet(0).row(i)[pathology_case_map['group desc']]
-        pathology_case.snomed_code = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed code']]
-        pathology_case.snomed_name = pathology_cases.sheet(0).row(i)[pathology_case_map['snomed name']]
-        pathology_case.accessioned_date_key = pathology_cases.sheet(0).row(i)[pathology_case_map['accessioned date key']]
-        pathology_case.section_description = pathology_cases.sheet(0).row(i)[pathology_case_map['section description']]
-        pathology_case.note_text = pathology_cases.sheet(0).row(i)[pathology_case_map['note text']]
-        pathology_case.normalization_method  = options[:normalization_method]
-        pathology_case.save!
-      end
-    end
   end
 end
 
